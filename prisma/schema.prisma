@@ -1,0 +1,160 @@
+// Prisma schema for EventNest — Event & Ticket Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ORGANIZER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(USER)
+  phone     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  events    Event[]   @relation("OrganizerEvents")
+  bookings  Booking[]
+  reviews   Review[]
+
+  @@map("users")
+}
+
+model Venue {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  city      String
+  capacity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events    Event[]
+
+  @@map("venues")
+}
+
+model Event {
+  id               String       @id @default(uuid())
+  title            String
+  description      String
+  date             DateTime
+  startTime        String
+  endTime          String
+  venueId          String
+  organizerId      String
+  capacity         Int
+  availableTickets Int
+  imageUrl         String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  venue            Venue        @relation(fields: [venueId], references: [id])
+  organizer        User         @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  ticketTypes      TicketType[]
+  bookings         Booking[]
+  reviews          Review[]
+
+  @@map("events")
+}
+
+model TicketType {
+  id                String        @id @default(uuid())
+  eventId           String
+  name              String        // e.g. Early Bird, Regular, VIP
+  price             Decimal       @db.Decimal(10, 2)
+  totalQuantity     Int
+  remainingQuantity Int
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  event             Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  bookingItems      BookingItem[]
+
+  @@map("ticket_types")
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  userId      String
+  eventId     String
+  totalAmount Decimal       @db.Decimal(10, 2)
+  status      BookingStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User          @relation(fields: [userId], references: [id])
+  event       Event         @relation(fields: [eventId], references: [id])
+  items       BookingItem[]
+  payment     Payment?
+
+  @@map("bookings")
+}
+
+model BookingItem {
+  id           String     @id @default(uuid())
+  bookingId    String
+  ticketTypeId String
+  quantity     Int
+  unitPrice    Decimal    @db.Decimal(10, 2)
+
+  booking      Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
+
+  @@map("booking_items")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  bookingId     String        @unique
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(PENDING)
+  paymentMethod String        // e.g. "CARD", "UPI", "NET_BANKING"
+  transactionId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  eventId   String
+  rating    Int      // 1 to 5
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}

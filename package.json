@@ -1,0 +1,20 @@
+{
+  "name": "eventnest",
+  "version": "1.0.0",
+  "description": "EventNest — Event & Ticket Management System",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": [
+    "event-management",
+    "ticket-booking",
+    "express",
+    "react",
+    "prisma",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "ISC"
+}
