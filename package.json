@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "EventNest — Event & Ticket Management System",
   "scripts": {
+    "seed": "node prisma/seed.js",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "keywords": [
     "event-management",
@@ -16,5 +20,13 @@
     "postgresql"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.8"
+  }
 }

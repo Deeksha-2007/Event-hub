@@ -1,8 +1,12 @@
 const ApiResponse = require('../utils/apiResponse');
+const prisma = require('../config/db');
 
 const getAllVenues = async (req, res, next) => {
   try {
-    ApiResponse.success(res, { venues: [] }, 'Venues retrieved successfully');
+    const venues = await prisma.venue.findMany({
+      orderBy: { name: 'asc' },
+    });
+    ApiResponse.success(res, { venues }, 'Venues retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -10,7 +14,13 @@ const getAllVenues = async (req, res, next) => {
 
 const createVenue = async (req, res, next) => {
   try {
-    ApiResponse.success(res, { venue: {} }, 'Venue created successfully', 201);
+    const venue = await prisma.venue.create({
+      data: {
+        ...req.body,
+        updatedAt: new Date(),
+      },
+    });
+    ApiResponse.success(res, { venue }, 'Venue created successfully', 201);
   } catch (error) {
     next(error);
   }

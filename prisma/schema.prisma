@@ -1,5 +1,3 @@
-// Prisma schema for EventNest — Event & Ticket Management System
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +5,145 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Attendee {
+  id            String     @id
+  bookingId     String
+  eventId       String
+  userId        String?
+  ticketTypeId  String
+  attendeeName  String
+  attendeeEmail String
+  phone         String?
+  checkInStatus Boolean    @default(false)
+  checkInTime   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime
+  Booking       Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  Event         Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  TicketType    TicketType @relation(fields: [ticketTypeId], references: [id])
+  User          User?      @relation(fields: [userId], references: [id])
+}
+
+model Booking {
+  id               String        @id
+  bookingReference String        @unique
+  userId           String
+  eventId          String
+  ticketTypeId     String
+  quantity         Int           @default(1)
+  unitPrice        Float
+  totalAmount      Float
+  status           BookingStatus @default(CONFIRMED)
+  cancelledAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+  Attendee         Attendee[]
+  Event            Event         @relation(fields: [eventId], references: [id])
+  TicketType       TicketType    @relation(fields: [ticketTypeId], references: [id])
+  User             User          @relation(fields: [userId], references: [id])
+  Payment          Payment?
+}
+
+model Event {
+  id                String       @id
+  title             String
+  description       String
+  category          String       @default("Technology")
+  bannerUrl         String?
+  startDate         DateTime
+  endDate           DateTime
+  venueId           String?
+  organizerId       String
+  totalCapacity     Int
+  availableCapacity Int
+  status            EventStatus  @default(PUBLISHED)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime
+  Attendee          Attendee[]
+  Booking           Booking[]
+  User              User         @relation(fields: [organizerId], references: [id])
+  Venue             Venue?       @relation(fields: [venueId], references: [id])
+  Review            Review[]
+  TicketType        TicketType[]
+}
+
+model Payment {
+  id             String        @id
+  bookingId      String        @unique
+  transactionId  String        @unique
+  amount         Float
+  currency       String        @default("INR")
+  paymentMethod  PaymentMethod @default(UPI)
+  status         PaymentStatus @default(SUCCESS)
+  paymentDetails String?
+  failureReason  String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime
+  Booking        Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id
+  eventId   String
+  userId    String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model TicketType {
+  id                String     @id
+  eventId           String
+  name              String
+  price             Float
+  totalQuantity     Int
+  availableQuantity Int
+  description       String?
+  perks             String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime
+  Attendee          Attendee[]
+  Booking           Booking[]
+  Event             Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id           String     @id
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(USER)
+  phone        String?
+  avatar       String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime
+  Attendee     Attendee[]
+  Booking      Booking[]
+  Event        Event[]
+  Review       Review[]
+}
+
+model Venue {
+  id         String   @id
+  name       String
+  address    String
+  city       String
+  state      String?
+  country    String   @default("India")
+  postalCode String?
+  capacity   Int
+  amenities  String?
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Event      Event[]
 }
 
 enum Role {
@@ -22,139 +159,22 @@ enum BookingStatus {
 }
 
 enum PaymentStatus {
-  PENDING
-  COMPLETED
+  SUCCESS
   FAILED
   REFUNDED
+  PENDING
 }
 
-model User {
-  id        String    @id @default(uuid())
-  name      String
-  email     String    @unique
-  password  String
-  role      Role      @default(USER)
-  phone     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  events    Event[]   @relation("OrganizerEvents")
-  bookings  Booking[]
-  reviews   Review[]
-
-  @@map("users")
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
 }
 
-model Venue {
-  id        String   @id @default(uuid())
-  name      String
-  address   String
-  city      String
-  capacity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  events    Event[]
-
-  @@map("venues")
-}
-
-model Event {
-  id               String       @id @default(uuid())
-  title            String
-  description      String
-  date             DateTime
-  startTime        String
-  endTime          String
-  venueId          String
-  organizerId      String
-  capacity         Int
-  availableTickets Int
-  imageUrl         String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-
-  venue            Venue        @relation(fields: [venueId], references: [id])
-  organizer        User         @relation("OrganizerEvents", fields: [organizerId], references: [id])
-  ticketTypes      TicketType[]
-  bookings         Booking[]
-  reviews          Review[]
-
-  @@map("events")
-}
-
-model TicketType {
-  id                String        @id @default(uuid())
-  eventId           String
-  name              String        // e.g. Early Bird, Regular, VIP
-  price             Decimal       @db.Decimal(10, 2)
-  totalQuantity     Int
-  remainingQuantity Int
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  event             Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  bookingItems      BookingItem[]
-
-  @@map("ticket_types")
-}
-
-model Booking {
-  id          String        @id @default(uuid())
-  userId      String
-  eventId     String
-  totalAmount Decimal       @db.Decimal(10, 2)
-  status      BookingStatus @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  user        User          @relation(fields: [userId], references: [id])
-  event       Event         @relation(fields: [eventId], references: [id])
-  items       BookingItem[]
-  payment     Payment?
-
-  @@map("bookings")
-}
-
-model BookingItem {
-  id           String     @id @default(uuid())
-  bookingId    String
-  ticketTypeId String
-  quantity     Int
-  unitPrice    Decimal    @db.Decimal(10, 2)
-
-  booking      Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
-
-  @@map("booking_items")
-}
-
-model Payment {
-  id            String        @id @default(uuid())
-  bookingId     String        @unique
-  amount        Decimal       @db.Decimal(10, 2)
-  status        PaymentStatus @default(PENDING)
-  paymentMethod String        // e.g. "CARD", "UPI", "NET_BANKING"
-  transactionId String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-
-  @@map("payments")
-}
-
-model Review {
-  id        String   @id @default(uuid())
-  userId    String
-  eventId   String
-  rating    Int      // 1 to 5
-  comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user      User     @relation(fields: [userId], references: [id])
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  @@map("reviews")
+enum PaymentMethod {
+  CARD
+  UPI
+  NETBANKING
+  WALLET
 }
