@@ -1,14 +1,14 @@
 import React from 'react';
+import Navbar from '../components/Navbar';
 
 export default function MainLayout({ children }) {
   return (
-    <div className="main-layout">
-      <header style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border)' }}>
-        <nav>
-          <strong>EventNest</strong>
-        </nav>
-      </header>
-      <main>{children}</main>
+    <div className="app-container">
+      <Navbar />
+      <main className="main-content">{children}</main>
+      <footer className="footer">
+        <p>© 2026 EventNest — Event & Ticket Management System</p>
+      </footer>
     </div>
   );
 }
