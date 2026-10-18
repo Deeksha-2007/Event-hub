@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { eventService } from '../services/eventService';
-import { ticketService } from '../services/ticketService';
+import { eventService, ticketService } from '../services/api';
 
 export default function EventDetails() {
   const { id } = useParams();

@@ -7,12 +7,17 @@ const api = axios.create({
   },
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+export const eventService = {
+  getAll: (params) => api.get('/events', { params }),
+  getById: (id) => api.get(`/events/${id}`),
+};
+
+export const venueService = {
+  getAll: () => api.get('/venues'),
+};
+
+export const ticketService = {
+  getByEventId: (eventId) => api.get(`/tickets/event/${eventId}`),
+};
 
 export default api;

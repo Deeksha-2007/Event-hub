@@ -1,4 +1,19 @@
-@import './variables.css';
+:root {
+  --bg-color: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #eef2ff;
+  --primary-border: #c7d2fe;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --radius: 8px;
+  --radius-lg: 12px;
+}
 
 * {
   margin: 0;
@@ -72,7 +87,6 @@ a {
   font-size: 0.95rem;
   font-weight: 500;
   color: var(--text-muted);
-  transition: color 0.15s ease;
 }
 
 .navbar-links a:hover,
@@ -96,7 +110,6 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   padding: 0.55rem 1.15rem;
   font-size: 0.9rem;
   font-weight: 600;
@@ -154,11 +167,6 @@ a {
   color: var(--text-muted);
 }
 
-.badge-success {
-  background-color: var(--success-light);
-  color: var(--success);
-}
-
 /* Event Cards & Grid */
 .events-grid,
 .venues-grid {
@@ -201,7 +209,7 @@ a {
 .event-card-title {
   font-size: 1.15rem;
   font-weight: 700;
-  margin: 0.5rem 0 0.5rem 0;
+  margin: 0.5rem 0;
   color: var(--text-main);
   line-height: 1.35;
 }
@@ -213,12 +221,6 @@ a {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: 1rem;
-}
-
-.event-card-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
 }
 
 .event-card-footer {
@@ -450,7 +452,7 @@ a {
   border-top: 1px dashed var(--border);
 }
 
-/* Notice / Coming Soon Banner */
+/* Coming Soon Banner */
 .info-banner {
   background-color: var(--primary-light);
   border: 1px solid var(--primary-border);
@@ -492,7 +494,7 @@ a {
   margin-bottom: 1rem;
 }
 
-/* Mobile Responsiveness */
+/* Responsive */
 @media (max-width: 640px) {
   .hero-title {
     font-size: 1.75rem;

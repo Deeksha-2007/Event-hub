@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { venueService } from '../services/venueService';
+import { venueService } from '../services/api';
 
 export default function Venues() {
   const [venues, setVenues] = useState([]);

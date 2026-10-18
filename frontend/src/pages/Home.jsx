@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { eventService } from '../services/eventService';
+import { eventService } from '../services/api';
 import EventCard from '../components/EventCard';
 
 export default function Home() {

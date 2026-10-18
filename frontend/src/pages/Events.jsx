@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { eventService } from '../services/eventService';
+import { eventService } from '../services/api';
 import EventCard from '../components/EventCard';
 
 const CATEGORIES = ['All', 'Technology', 'Music', 'Business', 'Entertainment', 'Food & Drinks'];
