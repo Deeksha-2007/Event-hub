@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { eventService } from '../services/api';
 import EventCard from '../components/EventCard';
+import HeroSection from "../components/home/hero_section";
+import Navbar from '../components/common/navbar';
+import FeaturedEvents from "../components/home/FeaturedEvents";
+import EventCategories from "../components/home/EventCategory"
+import UpcomingEvents from "../components/home/UpcomingEvents";
+import Footer from "../components/common/footer";
 
 export default function Home() {
   const [featuredEvents, setFeaturedEvents] = useState([]);
@@ -84,6 +90,24 @@ export default function Home() {
           </div>
         )}
       </section>
-    </div>
-  );
+    </div>)}
+
+export function HomeUI() {
+  return (
+    <main className="event-home">
+      <div className="hero-shell">
+        <Navbar/>
+        <HeroSection />
+      </div>
+
+      {/* Featured Events will be added in the next step. */}
+      <div id="featured-events">
+        <FeaturedEvents />
+        <EventCategories/>
+        <UpcomingEvents/>
+        <Footer/>
+      </div>
+    </main>
+    );
 }
+
