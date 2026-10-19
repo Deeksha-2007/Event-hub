@@ -1,88 +1,112 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { eventService } from '../services/api';
 import EventCard from '../components/EventCard';
+
 import HeroSection from "../components/home/hero_section";
 import Navbar from '../components/common/navbar';
 import FeaturedEvents from "../components/home/FeaturedEvents";
-import EventCategories from "../components/home/EventCategory"
+import EventCategories from "../components/home/EventCategory";
 import UpcomingEvents from "../components/home/UpcomingEvents";
 import Footer from "../components/common/footer";
 
-export default function Home() {
+// Temporary local data for the original Home function
+const sampleEvents = [
+  {
+    id: 1,
+    title: "The After Hours",
+    category: "MUSIC",
+    location: "New Delhi",
+    price: 499,
+    image:
+      "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1000&q=85",
+  },
+  {
+    id: 2,
+    title: "Future Forward",
+    category: "TECHNOLOGY",
+    location: "Gurugram",
+    price: 799,
+    image:
+      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=85",
+  },
+  {
+    id: 3,
+    title: "Ideas in Motion",
+    category: "CREATIVE",
+    location: "Noida",
+    price: 299,
+    image:
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1000&q=85",
+  },
+];
+
+// Original Home function
+export function Home() {
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await eventService.getAll();
-        const events = res.data?.data?.events || [];
-        // Take top 3 events for featured section
-        setFeaturedEvents(events.slice(0, 3));
-      } catch (err) {
-        console.error('Error fetching featured events:', err);
-        setError('Unable to load featured events right now. Please check if the backend is running.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFeatured();
+    // Use local data instead of making a backend request
+    setFeaturedEvents(sampleEvents);
+    setLoading(false);
   }, []);
 
   return (
     <div>
-      {/* Hero Section */}
       <section className="hero">
         <h1 className="hero-title">
           Welcome to <span>EventNest</span>
         </h1>
+
         <p className="hero-tagline">
-          Discover college, tech, and cultural events happening around you. Explore schedules, venues, and ticket options all in one place.
+          Discover college, tech, and cultural events happening around you.
+          Explore schedules, venues, and ticket options all in one place.
         </p>
+
         <Link to="/events" className="btn btn-primary">
           Explore All Events →
         </Link>
       </section>
 
-      {/* Featured Events Section */}
       <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem',
+          }}
+        >
           <div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 700 }}>Featured Events</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Handpicked upcoming highlights</p>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700 }}>
+              Featured Events
+            </h2>
+
+            <p
+              style={{
+                color: 'var(--text-muted)',
+                fontSize: '0.9rem',
+              }}
+            >
+              Handpicked upcoming highlights
+            </p>
           </div>
+
           <Link to="/events" className="btn btn-outline btn-sm">
-            View All ({featuredEvents.length > 0 ? '6' : '0'})
+            View All
           </Link>
         </div>
 
-        {loading && (
+        {loading ? (
           <div className="state-box">
             <h3>Loading events...</h3>
-            <p>Fetching the latest events from the server.</p>
           </div>
-        )}
-
-        {error && (
-          <div className="state-box error">
-            <h3>Failed to load events</h3>
-            <p>{error}</p>
-          </div>
-        )}
-
-        {!loading && !error && featuredEvents.length === 0 && (
+        ) : featuredEvents.length === 0 ? (
           <div className="state-box">
             <h3>No events found</h3>
             <p>Check back later for new events.</p>
           </div>
-        )}
-
-        {!loading && !error && featuredEvents.length > 0 && (
+        ) : (
           <div className="events-grid">
             {featuredEvents.map((event) => (
               <EventCard key={event.id} event={event} />
@@ -90,24 +114,28 @@ export default function Home() {
           </div>
         )}
       </section>
-    </div>)}
+    </div>
+  );
+}
 
+// New EventNest homepage design
 export function HomeUI() {
   return (
     <main className="event-home">
       <div className="hero-shell">
-        <Navbar/>
+        <Navbar />
         <HeroSection />
       </div>
 
-      {/* Featured Events will be added in the next step. */}
       <div id="featured-events">
         <FeaturedEvents />
-        <EventCategories/>
-        <UpcomingEvents/>
-        <Footer/>
+        <EventCategories />
+        <UpcomingEvents />
       </div>
+
+      <Footer />
     </main>
-    );
+  );
 }
 
+export default HomeUI;
