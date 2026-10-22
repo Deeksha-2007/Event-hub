@@ -1,6 +1,6 @@
-# 🎟️ EventNest — Event & Ticket Management System
+# 🎟️ EventHub — Event & Ticket Management System
 
-EventNest is a web-based **Event & Ticket Management System** that allows users to discover events, register for them, purchase tickets, and manage their bookings.
+EventHub is a web-based **Event & Ticket Management System** that allows users to discover events, register for them, purchase tickets, and manage their bookings.
 
 The platform also provides organizers with tools to create and manage events, define ticket types, track attendees, monitor event capacity, and view revenue.
 
@@ -195,6 +195,6 @@ EventNest/
 
 ## 🎯 Project Goal
 
-The goal of EventNest is to provide a single platform where **users can discover and book events**, while **organizers can create, manage, and monitor their events** from one place.
+The goal of EventHub is to provide a single platform where **users can discover and book events**, while **organizers can create, manage, and monitor their events** from one place.
 
-EventNest brings event discovery, ticket booking, payments, attendee management, and event reviews together in one system.
+EventHub brings event discovery, ticket booking, payments, attendee management, and event reviews together in one system.
