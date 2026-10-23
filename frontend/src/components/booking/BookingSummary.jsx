@@ -1,5 +1,5 @@
 
-import { formatDate } from "../../utils/formatters";
+import { formatDate } from "../../../utils/formatters";
 
 export default function BookingSummary({
   event,

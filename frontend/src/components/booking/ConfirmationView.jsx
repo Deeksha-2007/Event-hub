@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../common/navbar";
 import Footer from "../common/footer";
-import { formatDate, formatPrice } from "../../utils/formatters";
+import { formatDate, formatPrice } from "../../../utils/formatters";
 
 /**
  * Full-page confirmation screen shown after a successful simulated booking.

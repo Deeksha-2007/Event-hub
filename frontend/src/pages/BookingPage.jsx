@@ -14,7 +14,7 @@ import BookingSummary from "../components/booking/BookingSummary";
 import ConfirmationView from "../components/booking/ConfirmationView";
 
 import { getEventById } from "../data/mockdata";
-import { addBooking, generateRef } from "../data/bookings";
+import { addBooking, generateRef } from "../data/booking";
 
 export default function BookingPage() {
   const { id } = useParams();
