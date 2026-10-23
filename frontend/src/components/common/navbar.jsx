@@ -1,10 +1,12 @@
 
 import React, { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
+import { useBookmarks } from "../../context/BookmarkContext";
 
 function Navbar() {
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const { allBookmarks } = useBookmarks();
 
   // Uses the existing localStorage token for authentication.
   const isLoggedIn = Boolean(localStorage.getItem("token"));
@@ -12,6 +14,7 @@ function Navbar() {
   const isHome = location.pathname === "/";
   const isExplore = location.pathname.startsWith("/events");
   const isBookings = location.pathname.startsWith("/my-bookings");
+  const isSaved = location.pathname.startsWith("/saved");
 
   const handleSearch = (event) => {
     event.preventDefault();
@@ -34,6 +37,8 @@ function Navbar() {
   const searchValue = isExplore
     ? new URLSearchParams(location.search).get("search") || ""
     : "";
+
+  const savedCount = allBookmarks.length;
 
   return (
     <header className="absolute left-0 right-0 top-0 z-50 w-full px-5 py-4 sm:px-8 lg:px-8">
@@ -117,6 +122,19 @@ function Navbar() {
             >
               Explore
             </NavLink>
+
+            {/* Saved Events link with count badge */}
+            <NavLink
+              to="/saved"
+              className={() => `relative ${navClass(isSaved)}`}
+            >
+              Saved
+              {savedCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d5b68a] px-1 text-[9px] font-bold text-[#17120c]">
+                  {savedCount}
+                </span>
+              )}
+            </NavLink>
           </nav>
 
           {/* Authentication / Profile */}
@@ -140,6 +158,22 @@ function Navbar() {
               </>
             ) : (
               <>
+                {/* Bookmark icon shortcut */}
+                <Link
+                  to="/saved"
+                  aria-label={`Saved events${savedCount > 0 ? ` (${savedCount})` : ""}`}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white transition-colors hover:bg-white/10"
+                >
+                  <svg viewBox="0 0 24 24" fill={savedCount > 0 ? "currentColor" : "none"} className={`h-5 w-5 stroke-current stroke-[1.7] ${savedCount > 0 ? "text-[#d5b68a]" : ""}`}>
+                    <path d="M6 4.75A1.75 1.75 0 0 1 7.75 3h8.5A1.75 1.75 0 0 1 18 4.75V21l-6-4-6 4V4.75Z" />
+                  </svg>
+                  {savedCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d5b68a] px-1 text-[9px] font-bold text-[#17120c]">
+                      {savedCount}
+                    </span>
+                  )}
+                </Link>
+
                 <button
                   type="button"
                   onClick={() => setProfileOpen((open) => !open)}
@@ -186,12 +220,23 @@ function Navbar() {
                     </NavLink>
 
                     <NavLink
-                      to="/settings"
+                      to="/saved"
                       onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+                      className={() =>
+                        `flex items-center justify-between gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-white/10 hover:text-white ${
+                          isSaved ? "bg-white/10 text-white" : "text-white/80"
+                        }`
+                      }
                     >
-                      <span aria-hidden="true">⚙</span>
-                      Settings
+                      <span className="flex items-center gap-3">
+                        <span aria-hidden="true">♡</span>
+                        Saved Events
+                      </span>
+                      {savedCount > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#d5b68a] px-1.5 text-[9px] font-bold text-[#17120c]">
+                          {savedCount}
+                        </span>
+                      )}
                     </NavLink>
 
                     <div className="my-1 border-t border-white/10" />
@@ -227,6 +272,18 @@ function Navbar() {
             className={() => navClass(isExplore)}
           >
             Explore
+          </NavLink>
+
+          <NavLink
+            to="/saved"
+            className={() => `relative ${navClass(isSaved)}`}
+          >
+            Saved
+            {savedCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d5b68a] px-1 text-[9px] font-bold text-[#17120c]">
+                {savedCount}
+              </span>
+            )}
           </NavLink>
         </nav>
 
