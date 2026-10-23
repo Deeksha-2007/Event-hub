@@ -6,6 +6,7 @@ import HomeUI from "./pages/Home";
 import EventsUI from "./pages/Events";
 import { BookmarkProvider } from "./context/BookmarkContext";
 import SavedEventsPage from "./pages/SavedEventsPage";
+import EventDetails from "./pages/EventDetails";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/" element={<HomeUI />} />
           <Route path="/events" element={<EventsUI />} />
           <Route path="/saved" element={<SavedEventsPage />} />
+          <Route path="/events/:id" element={<EventDetails />} />
         </Routes>
       </BookmarkProvider>
     </BrowserRouter>

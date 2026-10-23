@@ -69,7 +69,7 @@ function FilterGroup({ title, options, value, onChange }) {
               className={`rounded-full border px-3.5 py-2 text-xs transition-all duration-200 ${
                 selected
                   ? "border-[#d5b68a] bg-[#d5b68a] text-[#17120c]"
-                  : "border-white/10 bg-white/[0.03] text-white/70 hover:border-white/30 hover:text-white"
+                  : "border-white/10 bg-white/3 text-white/70 hover:border-white/30 hover:text-white"
               }`}
             >
               {option}
@@ -192,9 +192,9 @@ export default function EventFilters({
                     current === filter.key ? null : filter.key
                   )
                 }
-                className={`inline-flex max-w-[220px] items-center gap-2 rounded-full border px-3.5 py-2.5 text-xs transition ${
+                className={`inline-flex max-w-55 items-center gap-2 rounded-full border px-3.5 py-2.5 text-xs transition ${
                   openFilter === filter.key
-                    ? "border-[#d5b68a]/60 bg-white/[0.08] text-white"
+                    ? "border-[#d5b68a]/60 bg-white/8 text-white"
                     : "border-white/10 text-white/65 hover:border-white/25 hover:text-white"
                 }`}
               >

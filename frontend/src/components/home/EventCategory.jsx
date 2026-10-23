@@ -1,5 +1,6 @@
-
 import React from "react";
+import { Link } from "react-router-dom";
+import { categoryToSlug } from "../../data/mockdata";
 
 const categories = [
   {
@@ -9,7 +10,6 @@ const categories = [
     emoji: "♫",
     gradient: "from-[#52352e] via-[#30211f] to-[#171313]",
     accent: "#e8bb83",
-    href: "/events?category=Music",
   },
   {
     id: 2,
@@ -18,7 +18,6 @@ const categories = [
     emoji: "✦",
     gradient: "from-[#344b5a] via-[#202d37] to-[#12171c]",
     accent: "#b4d8ec",
-    href: "/events?category=Technology",
   },
   {
     id: 3,
@@ -27,34 +26,30 @@ const categories = [
     emoji: "✎",
     gradient: "from-[#5b4634] via-[#30251e] to-[#171311]",
     accent: "#e9c49a",
-    href: "/events?category=Workshops",
   },
   {
     id: 4,
-    name: "Food & Culture",
+    name: "Food & Drinks",
     description: "Taste & discover",
     emoji: "✳",
     gradient: "from-[#62502e] via-[#352a1c] to-[#19140f]",
     accent: "#edca83",
-    href: "/events?category=Food%20%26%20Culture",
   },
   {
     id: 5,
-    name: "Social",
-    description: "Meet your people",
-    emoji: "◌",
-    gradient: "from-[#55363e] via-[#302126] to-[#171214]",
-    accent: "#e6b0b0",
-    href: "/events?category=Social",
+    name: "Business",
+    description: "Network & grow",
+    emoji: "◈",
+    gradient: "from-[#31514e] via-[#20312f] to-[#111716]",
+    accent: "#b5d8ce",
   },
   {
     id: 6,
-    name: "Adventure",
-    description: "Outdoor experiences",
-    emoji: "△",
-    gradient: "from-[#31514e] via-[#20312f] to-[#111716]",
-    accent: "#b5d8ce",
-    href: "/events?category=Adventure",
+    name: "Entertainment",
+    description: "Shows & experiences",
+    emoji: "◌",
+    gradient: "from-[#55363e] via-[#302126] to-[#171214]",
+    accent: "#e6b0b0",
   },
 ];
 
@@ -76,20 +71,20 @@ function EventCategories() {
           </h2>
         </div>
 
-        <a
-          href="/events"
+        <Link
+          to="/events"
           className="inline-flex w-fit items-center gap-2 pb-1 text-xs text-[#d0cbc2] transition hover:text-white sm:text-sm"
         >
           All categories <span aria-hidden="true">↗</span>
-        </a>
+        </Link>
       </header>
 
       {/* Category cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6 lg:gap-5">
         {categories.map((category, index) => (
-          <a
+          <Link
             key={category.id}
-            href={category.href}
+            to={`/events/category/${categoryToSlug(category.name)}`}
             className="group relative flex min-h-87.5 flex-col overflow-hidden border border-white/12 bg-[#090909] p-3.5 transition duration-300 hover:-translate-y-1 hover:border-[#c7a779]/60 hover:shadow-[0_12px_35px_rgba(0,0,0,0.35)] sm:min-h-97.5 sm:p-4 lg:min-h-102.5 lg:p-5"
           >
             {/* Number and arrow */}
@@ -150,7 +145,7 @@ function EventCategories() {
                 {category.description}
               </p>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
 
@@ -158,12 +153,12 @@ function EventCategories() {
       <footer className="mt-7 flex flex-col gap-3 border-t border-white/10 pt-5 text-[9px] tracking-[0.6px] text-[#aaa49a] sm:flex-row sm:items-center sm:justify-between sm:text-[10px]">
         <span>YOUR INTERESTS. YOUR EXPERIENCES.</span>
 
-        <a
-          href="/events"
+        <Link
+          to="/events"
           className="inline-flex w-fit items-center gap-2 transition hover:text-white"
         >
           EXPLORE SOMETHING NEW <span aria-hidden="true">↗</span>
-        </a>
+        </Link>
       </footer>
     </section>
   );

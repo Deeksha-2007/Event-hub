@@ -1,79 +1,21 @@
-
 import React from "react";
+import { Link } from "react-router-dom";
+import mockEvents from "../../data/mockdata";
+import { useBookmarks } from "../../context/BookmarkContext";
 
-const featuredEvents = [
-  {
-    id: 1,
-    category: "MUSIC",
-    title: "The After Hours",
-    location: "New Delhi",
-    price: 499,
-    image:
-      "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1000&q=85",
-    position: "left",
-  },
-  {
-    id: 2,
-    category: "TECHNOLOGY",
-    title: "Future Forward",
-    location: "Gurugram",
-    price: 799,
-    image:
-      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=700&q=85",
-    position: "top-left",
-  },
-  {
-    id: 3,
-    category: "CREATIVE",
-    title: "Ideas in Motion",
-    location: "Noida",
-    price: 299,
-    image:
-      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=700&q=85",
-    position: "top-right",
-  },
-  {
-    id: 4,
-    category: "CULTURE",
-    title: "The Gathering",
-    location: "New Delhi",
-    price: 399,
-    image:
-      "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=700&q=85",
-    position: "bottom-left",
-  },
-  {
-    id: 5,
-    category: "LIFESTYLE",
-    title: "Creative Nights",
-    location: "Delhi NCR",
-    price: 599,
-    image:
-      "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=700&q=85",
-    position: "bottom-right",
-  },
-  {
-    id: 6,
-    category: "EXPERIENCE",
-    title: "Beyond Ordinary",
-    location: "Gurugram",
-    price: 699,
-    image:
-      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1000&q=85",
-    position: "right",
-  },
+const desktopPositions = [
+  "lg:col-start-1 lg:row-start-1 lg:row-span-2",
+  "lg:col-start-2 lg:row-start-1",
+  "lg:col-start-3 lg:row-start-1",
+  "lg:col-start-2 lg:row-start-2",
+  "lg:col-start-3 lg:row-start-2",
+  "lg:col-start-4 lg:row-start-1 lg:row-span-2",
 ];
 
-const desktopPositions = {
-  left: "lg:col-start-1 lg:row-start-1 lg:row-span-2",
-  "top-left": "lg:col-start-2 lg:row-start-1",
-  "top-right": "lg:col-start-3 lg:row-start-1",
-  "bottom-left": "lg:col-start-2 lg:row-start-2",
-  "bottom-right": "lg:col-start-3 lg:row-start-2",
-  right: "lg:col-start-4 lg:row-start-1 lg:row-span-2",
-};
-
 function FeaturedEvents() {
+  const { toggle, isBookmarked } = useBookmarks();
+  const featuredEvents = mockEvents.slice(0, 6);
+
   return (
     <section
       id="featured-events"
@@ -85,31 +27,29 @@ function FeaturedEvents() {
           Find your <em className="text-[#aaa69e]">next thing.</em>
         </h2>
 
-        <a
-          href="/events"
+        <Link
+          to="/events"
           className="inline-flex shrink-0 items-center gap-2 pb-1 text-[10px] text-[#d4d0c8] transition-colors hover:text-white sm:text-xs"
         >
           All events <span className="text-base">↗</span>
-        </a>
+        </Link>
       </header>
 
       {/* Desktop: large left + 2x2 center + large right */}
       <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:h-[min(36vw,600px)] lg:grid-cols-[1.55fr_1fr_1fr_1.55fr] lg:grid-rows-2 lg:gap-3">
         {featuredEvents.map((event, index) => {
-          const isLarge =
-            event.position === "left" || event.position === "right";
+          const isLarge = index === 0 || index === 5;
+          const bookmarked = isBookmarked(event.id);
 
           return (
-            <a
+            <div
               key={event.id}
-              href={`/events/${event.id}`}
-              aria-label={`${event.title}, ${event.category}, from ₹${event.price}`}
-              className={`group relative isolate block h-47.5 min-w-0 overflow-hidden bg-[#171717] text-white sm:h-57.5 lg:h-auto ${desktopPositions[event.position]} ${
+              className={`group relative isolate h-47.5 min-w-0 overflow-hidden bg-[#171717] text-white sm:h-57.5 lg:h-auto ${desktopPositions[index]} ${
                 isLarge ? "col-span-2 lg:col-span-1" : "col-span-1"
               }`}
             >
               <img
-                src={event.image}
+                src={event.image || event.imageUrl}
                 alt=""
                 loading="lazy"
                 className="absolute inset-0 -z-20 h-full w-full object-cover brightness-[0.82] saturate-[0.8] transition duration-500 group-hover:scale-[1.045] group-hover:brightness-95"
@@ -121,6 +61,30 @@ function FeaturedEvents() {
                 {String(index + 1).padStart(2, "0")}
               </span>
 
+              {/* Bookmark button */}
+              <button
+                type="button"
+                aria-label={bookmarked ? "Remove bookmark" : "Bookmark event"}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggle(event);
+                }}
+                className={`absolute right-11 top-2.5 z-10 grid h-7 w-7 place-items-center rounded-full border transition-colors sm:right-12 sm:top-3 ${
+                  bookmarked
+                    ? "border-[#d5b68a] bg-[#d5b68a] text-[#17120c]"
+                    : "border-white/65 bg-black/40 text-white hover:bg-white/20"
+                }`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill={bookmarked ? "currentColor" : "none"}
+                  className="h-3.5 w-3.5 stroke-current stroke-[1.6]"
+                >
+                  <path d="M6 4.75A1.75 1.75 0 0 1 7.75 3h8.5A1.75 1.75 0 0 1 18 4.75V21l-6-4-6 4V4.75Z" />
+                </svg>
+              </button>
+
               <span className="absolute right-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full border border-white/65 text-sm transition-colors group-hover:bg-[#f5f2ec] group-hover:text-[#090909] sm:right-3 sm:top-3">
                 ↗
               </span>
@@ -130,7 +94,7 @@ function FeaturedEvents() {
                   isLarge ? "lg:bottom-4 lg:left-4 lg:right-4" : ""
                 }`}
               >
-                <span className="mb-1.5 block text-[7px] tracking-[1.2px] text-[#d5bd96] sm:text-[8px] sm:tracking-[1.4px]">
+                <span className="mb-1.5 block text-[7px] tracking-[1.2px] text-[#d5b68a] sm:text-[8px] sm:tracking-[1.4px]">
                   {event.category}
                 </span>
 
@@ -151,7 +115,27 @@ function FeaturedEvents() {
                   </span>
                 </div>
               </div>
-            </a>
+
+              {/* Book Tickets overlay — appears on hover */}
+              <Link
+                to={`/events/${event.id}/book`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="absolute inset-x-2.5 bottom-2.5 z-20 hidden items-center justify-center gap-2 rounded-full bg-[#d5b68a] py-2.5 text-[10px] font-semibold text-[#17120c] opacity-0 transition-all duration-200 group-hover:opacity-100 sm:flex sm:inset-x-3 sm:bottom-3"
+              >
+                Book Tickets ↗
+              </Link>
+
+              {/* Make whole card navigable */}
+              <Link
+                to={`/events/${event.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="absolute inset-0 z-10"
+                aria-label={`View ${event.title}`}
+              />
+            </div>
           );
         })}
       </div>

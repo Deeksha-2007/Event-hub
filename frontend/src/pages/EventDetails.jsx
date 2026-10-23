@@ -1,199 +1,195 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { eventService, ticketService } from '../services/api';
+
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
+
+import Navbar from "../components/common/navbar";
+import Footer from "../components/common/footer";
+
+import { getEventById } from "../data/mockdata";
+import { useBookmarks } from "../context/BookmarkContext";
+import { eventService } from "../services/api";
+
+import EventHero from "../components/events/EventHero";
+import EventInfoGrid from "../components/event-details/EventInfoGrid";
+import EventDescription from "../components/event-details/EventDescription";
+import EventTags from "../components/event-details/EventTags";
+import TicketSelection from "../components/event-details/TicketSelection";
+import BookingSidebar from "../components/event-details/BookingSidebar";
+import MobileBookingBar from "../components/event-details/MobileBookingBar";
+import EventLoading from "../components/event-details/EventLoading";
+import EventNotFound from "../components/event-details/EventNotFound";
+import RelatedEvents from "../components/event-details/RelatedEvents";
+
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+
+  const date = new Date(dateStr);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateStr;
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 export default function EventDetails() {
   const { id } = useParams();
-  const [event, setEvent] = useState(null);
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { toggle, isBookmarked } = useBookmarks();
 
+  const localEvent = useMemo(() => getEventById(id), [id]);
+
+  const [event, setEvent] = useState(localEvent);
+  const [loading, setLoading] = useState(!localEvent);
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
+
+  // Load event from the API when it isn't available in mock data.
   useEffect(() => {
-    const fetchEventData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    let cancelled = false;
 
-        // Fetch Event Details
-        const eventRes = await eventService.getById(id);
-        const eventData = eventRes.data?.data?.event;
-        setEvent(eventData);
+    setEvent(localEvent);
 
-        // Fetch Ticket Types for this event
-        try {
-          const ticketsRes = await ticketService.getByEventId(id);
-          const ticketsData = ticketsRes.data?.data?.tickets || [];
-          if (ticketsData.length > 0) {
-            setTickets(ticketsData);
-          } else if (eventData?.TicketType) {
-            setTickets(eventData.TicketType);
-          }
-        } catch (tktErr) {
-          console.warn('Could not fetch separate tickets list, falling back to embedded tickets:', tktErr);
-          if (eventData?.TicketType) {
-            setTickets(eventData.TicketType);
-          }
+    if (localEvent) {
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setLoading(true);
+
+    eventService
+      .getById(id)
+      .then((res) => {
+        if (!cancelled) {
+          setEvent(res.data ?? null);
         }
-      } catch (err) {
-        console.error('Error fetching event details:', err);
-        setError('Could not load event details. The event may not exist or the server is unavailable.');
-      } finally {
-        setLoading(false);
-      }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEvent(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
     };
+  }, [id, localEvent]);
 
-    fetchEventData();
-  }, [id]);
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Date TBA';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  // Select the first ticket when event data is loaded.
+  useEffect(() => {
+    setSelectedTicketId(event?.ticketTypes?.[0]?.id ?? null);
+  }, [event]);
 
   if (loading) {
     return (
-      <div className="state-box">
-        <h3>Loading event details...</h3>
-        <p>Please wait a moment.</p>
-      </div>
+      <main className="min-h-screen bg-[#090909] text-[#f5f2ec]">
+        <Navbar />
+        <EventLoading />
+        <Footer />
+      </main>
     );
   }
 
-  if (error || !event) {
+  if (!event) {
     return (
-      <div className="state-box error">
-        <h3>Event Not Found</h3>
-        <p>{error || 'The requested event could not be found.'}</p>
-        <Link to="/events" className="btn btn-primary btn-sm">
-          ← Back to Events
-        </Link>
-      </div>
+      <main className="min-h-screen bg-[#090909] text-[#f5f2ec]">
+        <Navbar />
+        <EventNotFound />
+        <Footer />
+      </main>
     );
   }
+
+  const eventId = event.id ?? event._id ?? id;
+  const tickets = event.ticketTypes ?? [];
+
+  const selectedTicket =
+    tickets.find((ticket) => ticket.id === selectedTicketId) ??
+    tickets[0];
+
+  const price =
+    selectedTicket?.price ??
+    event.price ??
+    event.ticketPrice ??
+    0;
+
+  const dateStr = formatDate(event.eventDate || event.startDate);
+  const bookmarked = isBookmarked(eventId);
 
   return (
-    <div>
-      <Link to="/events" className="btn btn-outline btn-sm" style={{ marginBottom: '1rem' }}>
-        ← Back to Events
-      </Link>
+    <main className="min-h-screen bg-[#090909] text-[#f5f2ec]">
+      <Navbar />
 
-      <div className="event-details-container">
-        <img
-          src={event.bannerUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=1200&q=80'}
-          alt={event.title}
-          className="event-details-banner"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=1200&q=80';
-          }}
-        />
+      {/* Event cover and title */}
+      <EventHero event={event} />
 
-        <div className="event-details-content">
-          <div className="event-details-header">
-            <span className="badge badge-category">{event.category || 'Event'}</span>
-            <h1 className="event-details-title">{event.title}</h1>
-          </div>
-
-          {/* Quick Info Grid */}
-          <div className="event-info-grid">
-            <div>
-              <strong style={{ display: 'block', color: 'var(--text-muted)' }}>Date & Time</strong>
-              <span>
-                {formatDate(event.startDate)}
-                {event.startDate && ` at ${formatTime(event.startDate)}`}
-              </span>
-            </div>
-
-            <div>
-              <strong style={{ display: 'block', color: 'var(--text-muted)' }}>Venue</strong>
-              <span>{event.Venue?.name || 'TBA'}</span>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                {event.Venue ? `${event.Venue.address}, ${event.Venue.city}` : ''}
-              </div>
-            </div>
-
-            <div>
-              <strong style={{ display: 'block', color: 'var(--text-muted)' }}>Capacity</strong>
-              <span>
-                {event.availableCapacity ?? event.totalCapacity ?? 'Open'} available / {event.totalCapacity ?? 'N/A'} total
-              </span>
-            </div>
-          </div>
-
-          {/* About Event */}
+      <div className="mx-auto max-w-[1600px] px-5 py-10 sm:px-10 lg:px-16">
+        <div className="grid gap-10 lg:grid-cols-[1fr_380px] lg:items-start">
+          {/* Main event content */}
           <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem' }}>About this Event</h3>
-            <p className="event-description">{event.description}</p>
-          </div>
+            <EventInfoGrid event={event} dateStr={dateStr} />
 
-          {/* Tickets Section */}
-          <div className="tickets-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Available Tickets</h3>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                {tickets.length} tier{tickets.length === 1 ? '' : 's'} defined
-              </span>
-            </div>
+            <EventDescription description={event.description} />
 
-            {tickets.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', marginTop: '0.75rem', fontSize: '0.9rem' }}>
-                No tickets are listed for this event yet.
+            <EventTags tags={event.tags ?? []} />
+
+            {/* Ticket selection on mobile */}
+            <div className="mb-10 lg:hidden">
+              <TicketSelection
+                tickets={tickets}
+                selectedTicketId={selectedTicketId}
+                onSelect={setSelectedTicketId}
+              />
+
+              <p className="mt-5 text-center text-[10px] text-white/30">
+                Simulated booking — no real payment required
               </p>
-            ) : (
-              <div className="tickets-grid">
-                {tickets.map((ticket) => (
-                  <div key={ticket.id} className="ticket-card">
-                    <div className="ticket-card-header">
-                      <span className="ticket-name">{ticket.name}</span>
-                      <span className="ticket-price">₹{ticket.price}</span>
-                    </div>
-
-                    <div className="ticket-quantity">
-                      <span className="badge badge-capacity">
-                        {ticket.availableQuantity ?? ticket.totalQuantity} of {ticket.totalQuantity} remaining
-                      </span>
-                    </div>
-
-                    {ticket.description && (
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                        {ticket.description}
-                      </p>
-                    )}
-
-                    {ticket.perks && (
-                      <div className="ticket-perks">
-                        <strong>Includes:</strong> {ticket.perks}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Booking Message */}
-            <div className="info-banner">
-              <span>ℹ️</span>
-              <span>Online ticket booking and checkout will be enabled in the upcoming release.</span>
             </div>
           </div>
+
+          {/* Desktop booking panel */}
+          <BookingSidebar
+            event={event}
+            eventId={eventId}
+            tickets={tickets}
+            selectedTicketId={selectedTicketId}
+            onSelectTicket={setSelectedTicketId}
+            price={price}
+            dateStr={dateStr}
+            bookmarked={bookmarked}
+            onToggleBookmark={toggle}
+          />
         </div>
       </div>
-    </div>
+
+      {/* Fixed mobile booking controls */}
+      <MobileBookingBar
+        event={event}
+        eventId={eventId}
+        price={price}
+        bookmarked={bookmarked}
+        onToggleBookmark={toggle}
+      />
+
+      {/* Related events */}
+      <RelatedEvents
+        currentId={eventId}
+        category={event.category}
+      />
+
+      <div className="pb-20 lg:pb-0">
+        <Footer />
+      </div>
+    </main>
   );
 }
