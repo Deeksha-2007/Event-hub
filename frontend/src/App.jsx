@@ -43,6 +43,7 @@ function App() {
             }
           >
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="bookings" element={<BookingsPage />} />
           </Route>
 
           {/* Legacy route redirect */}
