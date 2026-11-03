@@ -2,53 +2,46 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 
-// ── Mock organizer user — dashboard works without login ──
-const MOCK_USER = {
-  id: 'mock-organizer-001',
-  name: 'Demo Organizer',
-  email: 'organizer@eventnest.com',
-  role: 'ORGANIZER',
-  phone: '+91 98765 43210',
-  avatar: '',
-  createdAt: '2024-01-15T00:00:00.000Z',
-};
-
+// Read token and user from localStorage when the app first loads
 function readStorage() {
   try {
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || 'null');
-    // If nothing stored, return the mock organizer so dashboard is always accessible
-    return { token: token || 'mock-token', user: user || MOCK_USER };
+    return { token, user };
   } catch {
-    return { token: 'mock-token', user: MOCK_USER };
+    return { token: null, user: null };
   }
 }
 
 export function AuthProvider({ children }) {
   const [{ token, user }, setState] = useState(readStorage);
 
+  // Called after a successful login or register API call
   const login = useCallback((newToken, newUser) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
     setState({ token: newToken, user: newUser });
   }, []);
 
+  // Clear everything and go back to logged-out state
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Reset back to mock user instead of null
-    setState({ token: 'mock-token', user: MOCK_USER });
+    setState({ token: null, user: null });
   }, []);
 
+  // Update user info in context and localStorage (e.g. after profile edit)
   const updateUser = useCallback((updatedUser) => {
     const merged = { ...user, ...updatedUser };
     localStorage.setItem('user', JSON.stringify(merged));
     setState((prev) => ({ ...prev, user: merged }));
   }, [user]);
 
-  // Always authenticated and always organizer in mock mode
-  const isAuthenticated = true;
-  const isOrganizer = true;
+  // True only when a real token exists
+  const isAuthenticated = Boolean(token);
+
+  // True if the logged-in user has ORGANIZER or ADMIN role
+  const isOrganizer = Boolean(user && (user.role === 'ORGANIZER' || user.role === 'ADMIN'));
 
   return (
     <AuthContext.Provider value={{ token, user, isAuthenticated, isOrganizer, login, logout, updateUser }}>
