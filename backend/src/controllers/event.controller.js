@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const ApiResponse = require('../utils/apiResponse');
 const ApiError = require('../utils/apiError');
 const prisma = require('../config/db');
+const { parsePaginationParams, getPaginationMetadata } = require('../utils/pagination');
 
 /**
  * Get all events with optional filters (category, search, status, sort)
@@ -31,16 +32,25 @@ const getAllEvents = async (req, res, next) => {
     const orderByField = validSortFields.includes(sortBy) ? sortBy : 'startDate';
     const orderDirection = sort.toLowerCase() === 'desc' ? 'desc' : 'asc';
 
-    const events = await prisma.event.findMany({
-      where,
-      include: {
-        Venue: true,
-        TicketType: true,
-      },
-      orderBy: { [orderByField]: orderDirection },
-    });
+    const { page, limit, skip } = parsePaginationParams(req.query);
 
-    ApiResponse.success(res, { events }, 'Events retrieved successfully');
+    const [totalRecords, events] = await Promise.all([
+      prisma.event.count({ where }),
+      prisma.event.findMany({
+        where,
+        include: {
+          Venue: true,
+          TicketType: true,
+        },
+        orderBy: { [orderByField]: orderDirection },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const pagination = getPaginationMetadata(totalRecords, page, limit);
+
+    ApiResponse.success(res, { events, pagination }, 'Events retrieved successfully');
   } catch (error) {
     next(error);
   }

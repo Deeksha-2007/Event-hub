@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const prisma = require('../config/db');
 const ApiResponse = require('../utils/apiResponse');
 const ApiError = require('../utils/apiError');
+const { parsePaginationParams, getPaginationMetadata } = require('../utils/pagination');
 
 /**
  * Create a new booking for an event and ticket type
@@ -192,19 +193,29 @@ const createBooking = async (req, res, next) => {
 const getUserBookings = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const bookings = await prisma.booking.findMany({
-      where: { userId },
-      include: {
-        Event: {
-          include: { Venue: true },
-        },
-        TicketType: true,
-        Attendee: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const where = { userId };
+    const { page, limit, skip } = parsePaginationParams(req.query);
 
-    ApiResponse.success(res, { bookings }, 'User bookings retrieved successfully');
+    const [totalRecords, bookings] = await Promise.all([
+      prisma.booking.count({ where }),
+      prisma.booking.findMany({
+        where,
+        include: {
+          Event: {
+            include: { Venue: true },
+          },
+          TicketType: true,
+          Attendee: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const pagination = getPaginationMetadata(totalRecords, page, limit);
+
+    ApiResponse.success(res, { bookings, pagination }, 'User bookings retrieved successfully');
   } catch (error) {
     next(error);
   }

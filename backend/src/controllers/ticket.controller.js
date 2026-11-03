@@ -1,14 +1,26 @@
 const ApiResponse = require('../utils/apiResponse');
 const prisma = require('../config/db');
+const { parsePaginationParams, getPaginationMetadata } = require('../utils/pagination');
 
 const getTicketsByEvent = async (req, res, next) => {
   try {
     const { eventId } = req.params;
-    const tickets = await prisma.ticketType.findMany({
-      where: { eventId },
-      orderBy: { price: 'asc' },
-    });
-    ApiResponse.success(res, { tickets }, 'Tickets retrieved successfully');
+    const where = { eventId };
+    const { page, limit, skip } = parsePaginationParams(req.query);
+
+    const [totalRecords, tickets] = await Promise.all([
+      prisma.ticketType.count({ where }),
+      prisma.ticketType.findMany({
+        where,
+        orderBy: { price: 'asc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const pagination = getPaginationMetadata(totalRecords, page, limit);
+
+    ApiResponse.success(res, { tickets, pagination }, 'Tickets retrieved successfully');
   } catch (error) {
     next(error);
   }
