@@ -42,12 +42,13 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route index element={<Navigate to="analytics" replace />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="bookings" element={<BookingsPage />} />
           </Route>
 
           {/* Legacy route redirect */}
-          <Route path="/organizer-dashboard" element={<Navigate to="/organizer/overview" replace />} />
+          <Route path="/organizer-dashboard" element={<Navigate to="/organizer/analytics" replace />} />
 
         </Routes>
       </BookmarkProvider>

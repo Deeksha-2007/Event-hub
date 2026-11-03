@@ -140,7 +140,9 @@ const createBooking = async (req, res, next) => {
             attendeeName: item.attendeeName || req.user.name,
             attendeeEmail: item.attendeeEmail || req.user.email,
             phone: item.phone || phone || req.user.phone || null,
+            qrToken: crypto.randomBytes(32).toString('hex'),
             checkInStatus: false,
+            status: 'ACTIVE',
             createdAt: new Date(),
             updatedAt: new Date(),
           });
@@ -156,7 +158,9 @@ const createBooking = async (req, res, next) => {
             attendeeName: attendeeName || req.user.name,
             attendeeEmail: attendeeEmail || req.user.email,
             phone: phone || req.user.phone || null,
+            qrToken: crypto.randomBytes(32).toString('hex'),
             checkInStatus: false,
+            status: 'ACTIVE',
             createdAt: new Date(),
             updatedAt: new Date(),
           });

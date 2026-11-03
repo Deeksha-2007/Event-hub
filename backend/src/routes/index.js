@@ -9,6 +9,7 @@ const bookingRoutes = require('./booking.routes');
 const paymentRoutes = require('./payment.routes');
 const reviewRoutes = require('./review.routes');
 const dashboardRoutes = require('./dashboard.routes');
+const attendeeRoutes = require('./attendee.routes');
 
 router.use('/auth', authRoutes);
 router.use('/events', eventRoutes);
@@ -18,5 +19,6 @@ router.use('/bookings', bookingRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/attendees', attendeeRoutes);
 
 module.exports = router;

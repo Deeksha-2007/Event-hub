@@ -16,8 +16,10 @@ model Attendee {
   attendeeName  String
   attendeeEmail String
   phone         String?
+  qrToken       String?    @unique
   checkInStatus Boolean    @default(false)
   checkInTime   DateTime?
+  status        String     @default("ACTIVE")
   createdAt     DateTime   @default(now())
   updatedAt     DateTime
   Booking       Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
