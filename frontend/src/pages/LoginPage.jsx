@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/common/navbar";
 import Footer from "../components/common/footer";
+import { useAuth } from "../context/AuthContext";
 
 function FieldError({ msg }) {
   return msg ? <p className="mt-1 text-xs text-red-400">{msg}</p> : null;
@@ -10,8 +11,10 @@ function FieldError({ msg }) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth(); // get the login function from AuthContext
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState(""); // for wrong credentials error
   const [loading, setLoading] = useState(false);
 
   function validate() {
@@ -22,26 +25,46 @@ export default function LoginPage() {
       errs.email = "Enter a valid email address.";
     }
     if (!form.password) errs.password = "Password is required.";
-    else if (form.password.length < 6) errs.password = "Password must be at least 6 characters.";
     return errs;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
+    setServerError("");
     setLoading(true);
-    setTimeout(() => {
-      // Simulated auth — store token and user info
-      localStorage.setItem("token", "demo-token-" + Date.now());
-      const name = form.email.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
-      localStorage.setItem("user", JSON.stringify({ name, email: form.email }));
-      setLoading(false);
-      const redirect = localStorage.getItem('eventnest_redirect') || '/my-bookings';
-      localStorage.removeItem('eventnest_redirect');
+
+    try {
+      // Call the real backend login API
+      const response = await fetch("http://localhost:5001/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, password: form.password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Show the error message from the server (e.g. "Invalid email or password")
+        setServerError(data.message || "Login failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Save token and user info using AuthContext (also saves to localStorage)
+      login(data.data.token, data.data.user);
+
+      // Redirect to where the user was going, or to home
+      const redirect = localStorage.getItem("eventnest_redirect") || "/";
+      localStorage.removeItem("eventnest_redirect");
       navigate(redirect);
-    }, 600);
+    } catch (err) {
+      // Network error (backend not running, etc.)
+      setServerError("Could not connect to server. Please make sure the backend is running.");
+      setLoading(false);
+    }
   }
 
   const inputCls = "w-full rounded-2xl border border-white/10 bg-[#17151b] px-4 py-3.5 text-sm text-[#f5f2ec] outline-none transition placeholder:text-white/25 focus:border-[#d5b68a]/50 focus:ring-1 focus:ring-[#d5b68a]/15";
@@ -70,6 +93,13 @@ export default function LoginPage() {
               Sign in
             </h1>
 
+            {/* Show server-side error (wrong password, etc.) */}
+            {serverError && (
+              <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                {serverError}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div>
                 <label htmlFor="login-email" className="mb-1.5 block text-xs text-white/40">Email address</label>
@@ -86,10 +116,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label htmlFor="login-password" className="text-xs text-white/40">Password</label>
-                  <span className="text-[10px] text-white/25 cursor-default">Forgot password? (demo)</span>
-                </div>
+                <label htmlFor="login-password" className="mb-1.5 block text-xs text-white/40">Password</label>
                 <input
                   id="login-password"
                   type="password"
@@ -122,10 +149,6 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
-
-          <p className="mt-6 text-center text-[10px] text-white/20">
-            ⚠️ This is a demo login — no real authentication is performed.
-          </p>
 
           <div className="mt-4 text-center">
             <Link to="/events" className="text-xs text-white/30 hover:text-white">

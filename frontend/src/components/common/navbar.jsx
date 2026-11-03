@@ -1,15 +1,15 @@
 
 import React, { useState } from "react";
-import { NavLink, useLocation, Link } from "react-router-dom";
+import { NavLink, useLocation, Link, useNavigate } from "react-router-dom";
 import { useBookmarks } from "../../context/BookmarkContext";
+import { useAuth } from "../../context/AuthContext";
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const { allBookmarks } = useBookmarks();
-
-  // Uses the existing localStorage token for authentication.
-  const isLoggedIn = Boolean(localStorage.getItem("token"));
+  const { isAuthenticated, user, logout } = useAuth(); // use AuthContext for real auth state
 
   const isHome = location.pathname === "/";
   const isExplore = location.pathname.startsWith("/events");
@@ -26,6 +26,13 @@ function Navbar() {
       window.location.href = `/events?search=${encodeURIComponent(query)}`;
     }
   };
+
+  // Handle logout: clear auth state and redirect to login page
+  function handleLogout() {
+    setProfileOpen(false);
+    logout();
+    navigate("/login");
+  }
 
   const navClass = (active) =>
     `whitespace-nowrap rounded-full px-4 py-3 text-sm transition-colors duration-200 ${
@@ -139,7 +146,7 @@ function Navbar() {
 
           {/* Authentication / Profile */}
           <div className="relative flex shrink-0 items-center gap-3 lg:gap-5">
-            {!isLoggedIn ? (
+            {!isAuthenticated ? (
               <>
                 <NavLink
                   to="/login"
@@ -195,6 +202,13 @@ function Navbar() {
                 {profileOpen && (
                   <div className="absolute right-0 top-12 z-60 w-52 overflow-hidden rounded-2xl border border-white/10 bg-[#15131b] p-2 shadow-2xl">
 
+                    {/* Show user's name at the top of the dropdown */}
+                    {user?.name && (
+                      <div className="px-3 py-2 text-xs text-white/40 border-b border-white/10 mb-1">
+                        Hi, <span className="text-white/70 font-medium">{user.name}</span>
+                      </div>
+                    )}
+
                     <NavLink
                       to="/profile"
                       onClick={() => setProfileOpen(false)}
@@ -241,12 +255,10 @@ function Navbar() {
 
                     <div className="my-1 border-t border-white/10" />
 
+                    {/* Logout button — uses AuthContext logout */}
                     <button
                       type="button"
-                      onClick={() => {
-                        localStorage.removeItem("token");
-                        window.location.href = "/";
-                      }}
+                      onClick={handleLogout}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-red-300 transition hover:bg-red-400/10"
                     >
                       <span aria-hidden="true">↗</span>
