@@ -17,6 +17,7 @@ import ProfilePage from './pages/ProfilePage';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import AnalyticsPage from './pages/organizer/AnalyticsPage';
+import BookingsPage from './pages/organizer/BookingsPage';
 
 function App() {
   return (
