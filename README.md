@@ -197,4 +197,4 @@ EventNest/
 
 The goal of EventHub is to provide a single platform where **users can discover and book events**, while **organizers can create, manage, and monitor their events** from one place.
 
-EventHub brings event discovery, ticket booking, payments, attendee management, and event reviews together in one system.
+EventHub brings event discovery, ticket booking, payments, attendee management, and event reviews together in one system.check
