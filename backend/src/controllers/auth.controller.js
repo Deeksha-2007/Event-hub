@@ -6,41 +6,65 @@ const ApiError = require('../utils/apiError');
 const { generateToken } = require('../utils/jwt');
 
 // POST /api/v1/auth/register
+
 const register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
+    
 
     // Basic validation
     if (!name || !email || !password) {
       throw new ApiError(400, 'Name, email, and password are required');
     }
 
+    // Only allow USER or ORGANIZER during registration.
+    // Never allow users to register themselves as ADMIN.
+    const userRole = role === 'ORGANIZER' ? 'ORGANIZER' : 'USER';
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (existingUser) {
       throw new ApiError(409, 'An account with this email already exists');
     }
 
-    // Hash the password (10 salt rounds is standard)
+    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create the user in the database
+    // Create user
     const user = await prisma.user.create({
       data: {
         id: crypto.randomUUID(),
         name,
         email,
         passwordHash,
+        role: userRole,
         updatedAt: new Date(),
       },
-      // Only send safe fields back — never send the password hash
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+    // Generate JWT
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
     });
 
-    // Generate a JWT token for the new user
-    const token = generateToken({ id: user.id, email: user.email, role: user.role });
+    ApiResponse.success(
+      res,
+      { token, user },
+      'Account created successfully',
+      201
+    );
 
-    ApiResponse.success(res, { token, user }, 'Account created successfully', 201);
   } catch (error) {
     next(error);
   }

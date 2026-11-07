@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/common/navbar";
 import Footer from "../components/common/footer";
+import { authService } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 function FieldError({ msg }) {
@@ -11,12 +11,11 @@ function FieldError({ msg }) {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // get the login function from AuthContext
-  const [form, setForm] = useState({ name:"", email:"", password:"", confirm:"" });
+  const { login } = useAuth();
+  const [form, setForm] = useState({ name:"", email:"", password:"", confirm:"", isOrganizer: false });
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState(""); // e.g. email already exists
+  const [apiError, setApiError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false); // show success message briefly
 
   function validate() {
     const errs = {};
@@ -44,45 +43,25 @@ export default function RegisterPage() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    setServerError("");
+    setApiError("");
     setLoading(true);
-
     try {
-      // Call the real backend register API
-      const response = await fetch("http://localhost:5001/api/v1/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email,
-          password: form.password,
-        }),
+      const res = await authService.register({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.isOrganizer ? 'ORGANIZER' : 'USER',
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Show error (e.g. "An account with this email already exists")
-        setServerError(data.message || "Registration failed. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      // Show a brief success message
-      setSuccess(true);
-
-      // Save token and user using AuthContext (also saves to localStorage)
-      login(data.data.token, data.data.user);
-
-      // Redirect after a short delay so user sees the success message
-      setTimeout(() => {
-        const redirect = localStorage.getItem("eventnest_redirect") || "/events";
-        localStorage.removeItem("eventnest_redirect");
-        navigate(redirect);
-      }, 1200);
+      const { token, user } = res.data.data;
+      login(token, user);
+      const redirect = localStorage.getItem('eventnest_redirect') || (
+        user.role === 'ORGANIZER' ? '/organizer/overview' : '/events'
+      );
+      localStorage.removeItem('eventnest_redirect');
+      navigate(redirect);
     } catch (err) {
-      // Network error
-      setServerError("Could not connect to server. Please make sure the backend is running.");
+      setApiError(err.response?.data?.message || "Registration failed. Please try again.");
+    } finally {
       setLoading(false);
     }
   }
@@ -95,7 +74,6 @@ export default function RegisterPage() {
 
       <div className="flex min-h-[90vh] items-center justify-center px-5 py-24">
         <div className="w-full max-w-md">
-          {/* Brand */}
           <div className="mb-10 text-center">
             <span className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.5px]">
               <span aria-hidden="true" className="grid grid-cols-2 gap-0.75">
@@ -113,17 +91,9 @@ export default function RegisterPage() {
               Create account
             </h1>
 
-            {/* Success message */}
-            {success && (
-              <div className="mb-4 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-400">
-                ✓ Account created successfully! Redirecting you...
-              </div>
-            )}
-
-            {/* Server-side error */}
-            {serverError && (
-              <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {serverError}
+            {apiError && (
+              <div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/8 px-4 py-3 text-sm text-red-400">
+                {apiError}
               </div>
             )}
 
@@ -152,9 +122,29 @@ export default function RegisterPage() {
                 <FieldError msg={errors.confirm} />
               </div>
 
+              {/* Organizer toggle */}
+              <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 transition hover:bg-white/[0.06]">
+                <div className="relative">
+                  <input
+                    id="reg-organizer"
+                    type="checkbox"
+                    checked={form.isOrganizer}
+                    onChange={e=>setForm(p=>({...p,isOrganizer:e.target.checked}))}
+                    className="sr-only"
+                  />
+                  <div className={`h-5 w-9 rounded-full transition ${form.isOrganizer ? 'bg-[#d5b68a]' : 'bg-white/15'}`}>
+                    <div className={`mt-0.5 ml-0.5 h-4 w-4 rounded-full bg-white transition-transform ${form.isOrganizer ? 'translate-x-4' : ''}`} />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-white/80">Register as Organizer</p>
+                  <p className="text-[11px] text-white/35">I want to create and manage events</p>
+                </div>
+              </label>
+
               <button
                 type="submit"
-                disabled={loading || success}
+                disabled={loading}
                 className="flex w-full min-h-12 items-center justify-center gap-3 rounded-full bg-[#d5b68a] text-sm font-semibold text-[#17120c] transition hover:-translate-y-0.5 hover:bg-[#e8cfa8] disabled:opacity-60 mt-2"
               >
                 {loading

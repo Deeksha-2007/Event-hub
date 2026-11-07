@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/common/navbar";
 import Footer from "../components/common/footer";
+import { authService } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 function FieldError({ msg }) {
@@ -11,10 +11,10 @@ function FieldError({ msg }) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // get the login function from AuthContext
+  const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState(""); // for wrong credentials error
+  const [apiError, setApiError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function validate() {
@@ -25,6 +25,7 @@ export default function LoginPage() {
       errs.email = "Enter a valid email address.";
     }
     if (!form.password) errs.password = "Password is required.";
+    else if (form.password.length < 6) errs.password = "Password must be at least 6 characters.";
     return errs;
   }
 
@@ -33,36 +34,20 @@ export default function LoginPage() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    setServerError("");
+    setApiError("");
     setLoading(true);
-
     try {
-      // Call the real backend login API
-      const response = await fetch("http://localhost:5001/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, password: form.password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Show the error message from the server (e.g. "Invalid email or password")
-        setServerError(data.message || "Login failed. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      // Save token and user info using AuthContext (also saves to localStorage)
-      login(data.data.token, data.data.user);
-
-      // Redirect to where the user was going, or to home
-      const redirect = localStorage.getItem("eventnest_redirect") || "/";
-      localStorage.removeItem("eventnest_redirect");
+      const res = await authService.login({ email: form.email.trim(), password: form.password });
+      const { token, user } = res.data.data;
+      login(token, user);
+      const redirect = localStorage.getItem('eventnest_redirect') || (
+        user.role === 'ORGANIZER' || user.role === 'ADMIN' ? '/organizer/overview' : '/my-bookings'
+      );
+      localStorage.removeItem('eventnest_redirect');
       navigate(redirect);
     } catch (err) {
-      // Network error (backend not running, etc.)
-      setServerError("Could not connect to server. Please make sure the backend is running.");
+      setApiError(err.response?.data?.message || "Login failed. Please try again.");
+    } finally {
       setLoading(false);
     }
   }
@@ -75,7 +60,6 @@ export default function LoginPage() {
 
       <div className="flex min-h-[90vh] items-center justify-center px-5 py-24">
         <div className="w-full max-w-md">
-          {/* Brand mark */}
           <div className="mb-10 text-center">
             <span className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.5px]">
               <span aria-hidden="true" className="grid grid-cols-2 gap-0.75">
@@ -93,10 +77,9 @@ export default function LoginPage() {
               Sign in
             </h1>
 
-            {/* Show server-side error (wrong password, etc.) */}
-            {serverError && (
-              <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {serverError}
+            {apiError && (
+              <div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/8 px-4 py-3 text-sm text-red-400">
+                {apiError}
               </div>
             )}
 
@@ -116,7 +99,9 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label htmlFor="login-password" className="mb-1.5 block text-xs text-white/40">Password</label>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label htmlFor="login-password" className="text-xs text-white/40">Password</label>
+                </div>
                 <input
                   id="login-password"
                   type="password"

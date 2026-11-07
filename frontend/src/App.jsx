@@ -1,4 +1,3 @@
-
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
@@ -16,14 +15,19 @@ import ProfilePage from './pages/ProfilePage';
 
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
-import AnalyticsPage from './pages/organizer/AnalyticsPage';
+import OverviewPage from './pages/organizer/OverviewPage';
+import MyEventsPage from './pages/organizer/MyEventsPage';
+import CreateEditEventPage from './pages/organizer/CreateEditEventPage';
 import BookingsPage from './pages/organizer/BookingsPage';
+import AnalyticsPage from './pages/organizer/AnalyticsPage';
+import SettingsPage from './pages/organizer/SettingsPage';
 
 function App() {
   return (
     <BrowserRouter>
       <BookmarkProvider>
         <Routes>
+          {/* Public website routes */}
           <Route path="/" element={<HomeUI />} />
           <Route path="/events" element={<EventsUI />} />
           <Route path="/saved" element={<SavedEventsPage />} />
@@ -34,6 +38,8 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* Organizer dashboard — protected */}
           <Route
             path="/organizer"
             element={
@@ -42,14 +48,18 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="analytics" replace />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<OverviewPage />} />
+            <Route path="events" element={<MyEventsPage />} />
+            <Route path="events/create" element={<CreateEditEventPage />} />
+            <Route path="events/:id/edit" element={<CreateEditEventPage />} />
             <Route path="bookings" element={<BookingsPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
 
           {/* Legacy route redirect */}
-          <Route path="/organizer-dashboard" element={<Navigate to="/organizer/analytics" replace />} />
-
+          <Route path="/organizer-dashboard" element={<Navigate to="/organizer/overview" replace />} />
         </Routes>
       </BookmarkProvider>
     </BrowserRouter>
