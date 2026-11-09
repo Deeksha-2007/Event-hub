@@ -394,7 +394,7 @@ function ReviewsSection({ eventId }) {
               onChange={(e) => setFormComment(e.target.value)}
               maxLength={1000}
               placeholder="Tell others what you thought of this event…"
-              className="w-full rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#d5b68a]/50 focus:bg-white/[0.06]"
+              className="w-full rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#d5b68a]/50 focus:bg-white/6"
             />
 
             <p className="mt-1 text-right text-[10px] text-white/25">
@@ -451,7 +451,7 @@ function ReviewsSection({ eventId }) {
               value={formComment}
               onChange={(e) => setFormComment(e.target.value)}
               maxLength={1000}
-              className="w-full rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#d5b68a]/50 focus:bg-white/[0.06]"
+              className="w-full rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#d5b68a]/50 focus:bg-white/6"
             />
 
             <p className="mt-1 text-right text-[10px] text-white/25">

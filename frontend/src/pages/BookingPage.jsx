@@ -13,7 +13,7 @@ import BookingForm from "../components/booking/BookingForm";
 import BookingSummary from "../components/booking/BookingSummary";
 import ConfirmationView from "../components/booking/ConfirmationView";
 
-import { getEventById } from "../data/mockdata";
+// import { getEventById } from "../data/mockdata";
 import { addBooking, generateRef } from "../data/booking";
 
 export default function BookingPage() {
