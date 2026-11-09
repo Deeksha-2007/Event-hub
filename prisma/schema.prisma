@@ -56,13 +56,15 @@ model Event {
   bannerUrl         String?
   startDate         DateTime
   endDate           DateTime
+  format            EventFormat  @default(IN_PERSON)
   venueId           String?
   organizerId       String
   totalCapacity     Int
   availableCapacity Int
   status            EventStatus  @default(PUBLISHED)
   createdAt         DateTime     @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime     @updatedAt
+
   Attendee          Attendee[]
   Booking           Booking[]
   User              User         @relation(fields: [organizerId], references: [id])
@@ -110,7 +112,7 @@ model TicketType {
   description       String?
   perks             String?
   createdAt         DateTime   @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime   @updatedAt
   Attendee          Attendee[]
   Booking           Booking[]
   Event             Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -179,4 +181,9 @@ enum PaymentMethod {
   UPI
   NETBANKING
   WALLET
+}
+
+enum EventFormat {
+  IN_PERSON
+  ONLINE
 }

@@ -131,17 +131,6 @@ function Navbar() {
             </NavLink>
 
             {/* Saved Events link with count badge */}
-            <NavLink
-              to="/saved"
-              className={() => `relative ${navClass(isSaved)}`}
-            >
-              Saved
-              {savedCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d5b68a] px-1 text-[9px] font-bold text-[#17120c]">
-                  {savedCount}
-                </span>
-              )}
-            </NavLink>
           </nav>
 
           {/* Authentication / Profile */}

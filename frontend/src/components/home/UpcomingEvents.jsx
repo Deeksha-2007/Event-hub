@@ -1,229 +1,289 @@
-import React, { useState } from "react";
+
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import mockEvents from "../../data/mockdata";
+import { eventService } from "../../services/api";
 import { useBookmarks } from "../../context/BookmarkContext";
 
-const filters = [
-  "All",
-  "Music",
-  "Technology",
-  "Business",
-  "Workshops",
-  "Food & Drinks",
-  "Entertainment",
-];
+const UpcomingEvents = () => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
 
-function UpcomingEvents() {
-  const { toggle, isBookmarked } = useBookmarks();
-  const [activeFilter, setActiveFilter] = useState("All");
+  const { bookmarks, toggleBookmark } = useBookmarks();
 
-  const upcomingEvents = mockEvents
-    .filter((e) => new Date(e.eventDate) > new Date())
-    .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
-    .slice(0, 6);
+  const categories = [
+    "All",
+    "Technology",
+    "Business",
+    "Design",
+    "Music",
+    "Art",
+    "Education",
+    "Health",
+  ];
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await eventService.getAll({
+          limit: 100,
+          sort: "asc",
+          sortBy: "startDate",
+        });
+
+        // Support common API response structures
+        const eventData =
+          response.data?.data?.events ||
+          response.data?.events ||
+          response.data?.data ||
+          response.data;
+
+        const eventsArray = Array.isArray(eventData)
+          ? eventData
+          : [];
+
+        const now = new Date();
+
+        const formattedEvents = eventsArray
+          .map((event) => {
+            const startDate = new Date(event.startDate);
+            const endDate = new Date(event.endDate);
+
+            const ticketTypes = event.TicketType || [];
+
+            const lowestPrice =
+              ticketTypes.length > 0
+                ? Math.min(
+                    ...ticketTypes.map((ticket) =>
+                      Number(ticket.price)
+                    )
+                  )
+                : 0;
+
+            const isOnline = event.format === "ONLINE";
+
+            return {
+              ...event,
+              image:
+                event.bannerUrl ||
+                "https://images.unsplash.com/photo-1540575467063-178a50c2df87",
+              eventDate: startDate,
+              date: startDate,
+              location: isOnline
+                ? "Online"
+                : event.Venue?.city || "Location TBA",
+              venue: isOnline
+                ? "Online Event"
+                : event.Venue?.name || "Venue TBA",
+              time: startDate.toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              price: lowestPrice,
+              endDate: endDate,
+            };
+          })
+          .filter(
+            (event) =>
+              event.status === "PUBLISHED" &&
+              !isNaN(event.eventDate.getTime()) &&
+              event.eventDate > now
+          )
+          .sort(
+            (a, b) =>
+              a.eventDate.getTime() - b.eventDate.getTime()
+          )
+          .slice(0, 6);
+
+        setEvents(formattedEvents);
+      } catch (err) {
+        console.error("Error fetching upcoming events:", err);
+        setError("Unable to load upcoming events. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   const filteredEvents =
-    activeFilter === "All"
-      ? upcomingEvents
-      : upcomingEvents.filter((e) => e.category === activeFilter);
+    activeCategory === "All"
+      ? events
+      : events.filter(
+          (event) =>
+            event.category?.toLowerCase() ===
+            activeCategory.toLowerCase()
+        );
+
+  const isBookmarked = (eventId) => {
+    return bookmarks?.some(
+      (bookmark) =>
+        bookmark.id === eventId ||
+        bookmark.eventId === eventId
+    );
+  };
 
   return (
-    <section
-      id="upcoming-events"
-      className="bg-[#090909] px-[5%] py-12 text-[#f5f2ec] md:px-[4.3%] md:py-16"
-    >
-      {/* Section heading */}
-      <header className="mb-7 flex flex-col justify-between gap-5 sm:flex-row sm:items-end md:mb-9">
-        <div>
-          <p className="mb-3 text-[10px] font-medium tracking-[2px] text-[#b8b3aa] sm:text-xs">
-            SAVE YOUR SPOT
-          </p>
+    <section className="bg-[#080808] py-20 px-6 md:px-12 lg:px-20">
+      <div className="max-w-7xl mx-auto">
 
-          <h2 className="font-['Playfair_Display',Georgia,serif] text-[clamp(30px,4vw,48px)] font-normal leading-tight tracking-[-1.2px]">
-            Coming up <em className="text-[#aaa69e]">next.</em>
-          </h2>
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-[#b8a47a] mb-3">
+              Don't Miss Out
+            </p>
 
-          <p className="mt-3 max-w-110 text-sm leading-6 text-[#aaa8a2]">
-            Good plans start here. Find your next experience and make it
-            memorable.
-          </p>
+            <h2 className="text-3xl md:text-5xl font-semibold text-white">
+              Upcoming Events
+            </h2>
+
+            <p className="text-gray-400 mt-3">
+              Discover experiences worth looking forward to.
+            </p>
+          </div>
+
+          <Link
+            to="/explore"
+            className="text-white border-b border-[#b8a47a] pb-2 hover:text-[#b8a47a] transition"
+          >
+            Explore All Events →
+          </Link>
         </div>
 
-        <Link
-          to="/events"
-          className="inline-flex w-fit shrink-0 items-center gap-2 pb-1 text-xs text-[#d4d0c8] transition hover:text-white"
-        >
-          Explore all events <span aria-hidden="true">↗</span>
-        </Link>
-      </header>
-
-      {/* Working category filters */}
-      <div
-        className="mb-7 flex gap-2 overflow-x-auto pb-2 sm:mb-8 sm:flex-wrap"
-        aria-label="Filter upcoming events by category"
-      >
-        {filters.map((filter) => {
-          const isActive = activeFilter === filter;
-
-          return (
+        {/* Category Filters */}
+        <div className="flex gap-3 overflow-x-auto pb-4 mb-8 scrollbar-hide">
+          {categories.map((category) => (
             <button
-              key={filter}
-              type="button"
-              onClick={() => setActiveFilter(filter)}
-              aria-pressed={isActive}
-              className={`shrink-0 rounded-full border px-4 py-2.5 text-xs transition duration-200 ${
-                isActive
-                  ? "border-[#f5f2ec] bg-[#f5f2ec] font-semibold text-[#151515]"
-                  : "border-white/15 bg-transparent text-[#c4c0b8] hover:border-white/40 hover:text-white"
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={`px-5 py-2 rounded-full text-sm whitespace-nowrap transition ${
+                activeCategory === category
+                  ? "bg-[#b8a47a] text-black"
+                  : "bg-[#171717] text-gray-300 hover:bg-[#292929]"
               }`}
             >
-              {filter}
+              {category}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      {/* Event cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-        {filteredEvents.map((event) => {
-          const eventDateObj = new Date(event.eventDate || event.date);
-          const isValidDate = !isNaN(eventDateObj.getTime());
-          const dateNum = isValidDate
-            ? eventDateObj.getDate().toString().padStart(2, "0")
-            : event.date || "";
-          const monthStr = isValidDate
-            ? eventDateObj
-                .toLocaleDateString("en-US", { month: "short" })
-                .toUpperCase()
-            : event.month || "";
-          const dayStr = isValidDate
-            ? eventDateObj
-                .toLocaleDateString("en-US", { weekday: "long" })
-                .toUpperCase()
-            : event.day || "";
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-20 text-gray-400">
+            Loading upcoming events...
+          </div>
+        )}
 
-          const bookmarked = isBookmarked(event.id);
-
-          return (
-            <article
-              key={event.id}
-              className="group min-w-0 overflow-hidden border border-white/10 bg-[#111111] transition duration-300 hover:-translate-y-1 hover:border-white/25"
+        {/* Error State */}
+        {!loading && error && (
+          <div className="text-center py-16">
+            <p className="text-red-400 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-white underline"
             >
-              {/* Image */}
-              <div className="relative h-55 overflow-hidden sm:h-57.5 lg:h-62.5">
-                <img
-                  src={event.image || event.imageUrl}
-                  alt=""
-                  loading="lazy"
-                  className="h-full w-full object-cover brightness-[0.82] saturate-[0.8] transition duration-500 group-hover:scale-105 group-hover:brightness-100"
-                />
+              Try again
+            </button>
+          </div>
+        )}
 
-                <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-black/20" />
+        {/* Empty State */}
+        {!loading && !error && filteredEvents.length === 0 && (
+          <div className="text-center py-20">
+            <h3 className="text-xl text-white mb-2">
+              No upcoming events found
+            </h3>
+            <p className="text-gray-400">
+              Try selecting another category or check back later.
+            </p>
+          </div>
+        )}
 
-                {/* Date badge */}
-                <div className="absolute left-4 top-4 flex min-w-13.5 flex-col items-center bg-[#f5f2ec] px-3 py-2.5 text-[#151515]">
-                  <span className="text-[22px] font-semibold leading-none">
-                    {dateNum}
+        {/* Event Cards */}
+        {!loading && !error && filteredEvents.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+            {filteredEvents.map((event) => (
+              <div
+                key={event.id}
+                className="group bg-[#141414] rounded-2xl overflow-hidden border border-white/5 hover:border-[#b8a47a]/40 transition duration-300"
+              >
+                {/* Event Image */}
+                <div className="relative h-56 overflow-hidden">
+                  <img
+                    src={event.image}
+                    alt={event.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                  />
+
+                  <span className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-2 rounded-full">
+                    {event.category}
                   </span>
-                  <span className="mt-1 text-[10px] font-semibold tracking-[1px]">
-                    {monthStr}
-                  </span>
-                </div>
 
-                {/* Category */}
-                <span className="absolute bottom-4 left-4 text-[9px] font-medium tracking-[1.7px] text-[#e6c99b]">
-                  {event.category.toUpperCase()}
-                </span>
-
-                {/* Bookmark button */}
-                <button
-                  type="button"
-                  aria-label={bookmarked ? "Remove bookmark" : "Bookmark event"}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggle(event);
-                  }}
-                  className={`absolute right-14 top-4 z-10 grid h-8 w-8 place-items-center rounded-full border transition ${
-                    bookmarked
-                      ? "border-[#d5b68a] bg-[#d5b68a] text-[#17120c]"
-                      : "border-white/60 bg-black/40 text-white hover:bg-white/20"
-                  }`}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill={bookmarked ? "currentColor" : "none"}
-                    className="h-4 w-4 stroke-current stroke-[1.6]"
+                  {/* Bookmark */}
+                  <button
+                    onClick={() => toggleBookmark(event)}
+                    className="absolute top-4 right-4 bg-black/70 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#b8a47a] hover:text-black transition"
+                    aria-label="Toggle bookmark"
                   >
-                    <path d="M6 4.75A1.75 1.75 0 0 1 7.75 3h8.5A1.75 1.75 0 0 1 18 4.75V21l-6-4-6 4V4.75Z" />
-                  </svg>
-                </button>
-
-                {/* Arrow */}
-                <span className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-white/60 text-white transition group-hover:border-white group-hover:bg-white group-hover:text-[#151515]">
-                  ↗
-                </span>
-              </div>
-
-              {/* Details */}
-              <div className="p-4 sm:p-5">
-                <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[#a9a69f]">
-                  <span>{dayStr}</span>
-                  <span className="h-1 w-1 rounded-full bg-[#d5b68a]" />
-                  <span>{event.time}</span>
+                    {isBookmarked(event.id) ? "♥" : "♡"}
+                  </button>
                 </div>
 
-                <h3 className="font-['Playfair_Display',Georgia,serif] text-[22px] font-normal leading-tight tracking-[-0.4px] text-[#f5f2ec] transition group-hover:text-[#e6c99b]">
-                  {event.title}
-                </h3>
+                {/* Event Details */}
+                <div className="p-5">
+                  <h3 className="text-xl font-semibold text-white mb-3 line-clamp-2">
+                    {event.title}
+                  </h3>
 
-                <p className="mt-2 text-xs text-[#aaa8a2]">
-                  {event.venue}, {event.location}
-                </p>
+                  <div className="space-y-2 text-sm text-gray-400 mb-5">
+                    <p>
+                      📅{" "}
+                      {event.eventDate.toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
 
-                <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-                    <Link
-                      to={`/events/${event.id}/book`}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[#d5b68a]/15 px-4 py-2 text-xs font-medium text-[#d5b68a] transition hover:bg-[#d5b68a]/25"
-                    >
-                      Book Tickets ↗
-                    </Link>
+                    <p>🕒 {event.time}</p>
+
+                    <p>📍 {event.location}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                    <div>
+                      <p className="text-xs text-gray-500">
+                        Starting from
+                      </p>
+                      <p className="text-lg font-semibold text-[#b8a47a]">
+                        {event.price === 0
+                          ? "Free"
+                          : `₹${event.price}`}
+                      </p>
+                    </div>
+
                     <Link
                       to={`/events/${event.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-[#d5b68a] transition group-hover:translate-x-1"
+                      className="px-5 py-2.5 rounded-full bg-white text-black text-sm font-medium hover:bg-[#b8a47a] transition"
                     >
-                      View event →
+                      View Event
                     </Link>
                   </div>
+                </div>
               </div>
-            </article>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        )}
 
-      {/* Empty state */}
-      {filteredEvents.length === 0 && (
-        <p className="py-12 text-center text-sm text-[#aaa8a2]">
-          No events found in this category.
-        </p>
-      )}
-
-      {/* Bottom link */}
-      <div className="mt-9 flex justify-center md:mt-11">
-        <Link
-          to="/events"
-          className="inline-flex min-h-11.5 items-center justify-center gap-3 rounded-full border border-white/20 px-6 text-xs text-[#f5f2ec] transition hover:border-white/50 hover:bg-white/5"
-        >
-          Discover all events <span aria-hidden="true">↗</span>
-        </Link>
       </div>
     </section>
   );
-}
+};
 
 export default UpcomingEvents;

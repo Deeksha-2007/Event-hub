@@ -25,29 +25,44 @@ api.interceptors.response.use(
   }
 );
 
+// ─── Event Service ────────────────────────────────────────────────────────────
 export const eventService = {
   getAll: (params) => api.get('/events', { params }),
   getById: (id) => api.get(`/events/${id}`),
+  getMyEvents: (params) => api.get('/events/my-events', { params }),
   create: (data) => api.post('/events', data),
   update: (id, data) => api.put(`/events/${id}`, data),
+  patch: (id, data) => api.patch(`/events/${id}`, data),
   delete: (id) => api.delete(`/events/${id}`),
 };
 
+// ─── Review Service ───────────────────────────────────────────────────────────
+export const reviewService = {
+  getByEvent: (eventId) => api.get(`/reviews/event/${eventId}`),
+  create: (eventId, data) => api.post(`/reviews/event/${eventId}`, data),
+  update: (reviewId, data) => api.put(`/reviews/${reviewId}`, data),
+  delete: (reviewId) => api.delete(`/reviews/${reviewId}`),
+};
+
+// ─── Venue Service ────────────────────────────────────────────────────────────
 export const venueService = {
   getAll: () => api.get('/venues'),
 };
 
+// ─── Ticket Service ───────────────────────────────────────────────────────────
 export const ticketService = {
   getByEventId: (eventId) => api.get(`/tickets/event/${eventId}`),
   create: (eventId, data) => api.post(`/tickets/event/${eventId}`, data),
 };
 
+// ─── Booking Service ──────────────────────────────────────────────────────────
 export const bookingService = {
   create: (data) => api.post('/bookings', data),
   getMyBookings: () => api.get('/bookings/my-bookings'),
   cancel: (id) => api.patch(`/bookings/${id}/cancel`),
 };
 
+// ─── Auth Service ─────────────────────────────────────────────────────────────
 export const authService = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
@@ -56,6 +71,7 @@ export const authService = {
   changePassword: (data) => api.put('/auth/change-password', data),
 };
 
+// ─── Dashboard Service ────────────────────────────────────────────────────────
 export const dashboardService = {
   getStats: () => api.get('/dashboard/stats'),
   getMyEvents: (params) => api.get('/dashboard/my-events', { params }),
