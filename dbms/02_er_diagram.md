@@ -100,7 +100,7 @@ erDiagram
 
     Payment {
         String        id             PK
-        String        bookingId      FK_UK
+        String        bookingId      FK, UK
         String        transactionId  UK
         Float         amount
         String        currency
