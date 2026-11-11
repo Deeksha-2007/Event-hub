@@ -53,6 +53,12 @@ const createBooking = async (req, res, next) => {
     }
 
     // 4. Check available quantity and capacity upfront
+    if (ticketType.availableQuantity <= 0) {
+      throw new ApiError(
+        400,
+        `This ticket category has reached its maximum capacity. No tickets available for ${ticketType.name}`
+      );
+    }
     if (ticketType.availableQuantity < ticketQuantity) {
       throw new ApiError(
         400,
