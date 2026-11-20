@@ -2,18 +2,29 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../utils/axios';
 import { useNavigate } from 'react-router-dom';
+import { FaCalendarAlt, FaPlus, FaEdit, FaTrash, FaUsers } from 'react-icons/fa';
+
+const CATEGORIES = ['Technology', 'Music', 'Business', 'Sports', 'Education', 'Arts', 'Food', 'Other'];
+
+const emptyForm = {
+    title: '', description: '', date: '', location: '', category: 'Technology', totalSeats: '', image: ''
+};
 
 const AdminDashboard = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
+
     const [events, setEvents] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('events'); // 'events' or 'bookings'
 
-    const [showEventForm, setShowEventForm] = useState(false);
-    const [formData, setFormData] = useState({
-        title: '', description: '', date: '', location: '', category: '', totalSeats: '', ticketPrice: '', image: ''
-    });
+    // Form state
+    const [showForm, setShowForm] = useState(false);
+    const [editingEvent, setEditingEvent] = useState(null);
+    const [form, setForm] = useState(emptyForm);
+    const [formError, setFormError] = useState('');
+    const [formLoading, setFormLoading] = useState(false);
 
     useEffect(() => {
         if (!user || user.role !== 'admin') {
@@ -27,213 +38,280 @@ const AdminDashboard = () => {
         try {
             const [eventsRes, bookingsRes] = await Promise.all([
                 api.get('/events'),
-                api.get('/bookings/my') // Admin gets all bookings
+                api.get('/bookings/my')
             ]);
             setEvents(eventsRes.data);
             setBookings(bookingsRes.data);
         } catch (error) {
-            console.error('Error fetching admin data', error);
+            console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCreateEvent = async (e) => {
+    const handleFormChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const openCreateForm = () => {
+        setForm(emptyForm);
+        setEditingEvent(null);
+        setFormError('');
+        setShowForm(true);
+    };
+
+    const openEditForm = (event) => {
+        setForm({
+            title: event.title,
+            description: event.description,
+            date: event.date ? event.date.slice(0, 10) : '',
+            location: event.location,
+            category: event.category,
+            totalSeats: event.totalSeats,
+            image: event.image || ''
+        });
+        setEditingEvent(event);
+        setFormError('');
+        setShowForm(true);
+    };
+
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
+        setFormLoading(true);
+        setFormError('');
         try {
-            await api.post('/events', formData);
-            setShowEventForm(false);
-            setFormData({ title: '', description: '', date: '', location: '', category: '', totalSeats: '', ticketPrice: '', image: '' });
+            if (editingEvent) {
+                await api.put(`/events/${editingEvent._id}`, form);
+            } else {
+                await api.post('/events', form);
+            }
+            setShowForm(false);
             fetchData();
         } catch (error) {
-            alert(error.response?.data?.message || 'Error creating event');
+            setFormError(error.response?.data?.message || 'Error saving event');
+        } finally {
+            setFormLoading(false);
         }
     };
 
     const handleDeleteEvent = async (id) => {
-        if (window.confirm('Are you sure you want to delete this event?')) {
-            try {
-                await api.delete(`/events/${id}`);
-                fetchData();
-            } catch (error) {
-                alert('Error deleting event');
-            }
-        }
-    };
-
-    const handleConfirmBooking = async (id, paymentStatus) => {
+        if (!window.confirm('Are you sure you want to delete this event?')) return;
         try {
-            await api.put(`/bookings/${id}/confirm`, { paymentStatus });
+            await api.delete(`/events/${id}`);
             fetchData();
         } catch (error) {
-            alert(error.response?.data?.message || 'Error confirming booking');
+            alert(error.response?.data?.message || 'Error deleting event');
         }
     };
 
     const handleCancelBooking = async (id) => {
-        if (window.confirm('Cancel this user\'s booking request?')) {
-            try {
-                await api.delete(`/bookings/${id}`);
-                fetchData();
-            } catch (error) {
-                alert(error.response?.data?.message || 'Error cancelling booking');
-            }
+        if (!window.confirm('Cancel this booking?')) return;
+        try {
+            await api.delete(`/bookings/${id}`);
+            fetchData();
+        } catch (error) {
+            alert(error.response?.data?.message || 'Error cancelling booking');
         }
     };
 
-    if (loading) return <div className="text-center py-20 text-xl font-semibold">Loading admin panel...</div>;
+    if (loading) return <div className="text-center py-20 text-xl font-semibold">Loading admin dashboard...</div>;
 
     return (
-        <div className="max-w-7xl mx-auto">
-            <div className="bg-black text-white rounded-2xl p-6 sm:p-8 mb-8 shadow-lg flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Admin Dashboard</h1>
-                    <p className="text-gray-300">Manage events and manually confirm bookings.</p>
+        <div className="max-w-6xl mx-auto">
+            {/* Admin Header */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 mb-8 border border-gray-100 flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                <div className="w-20 h-20 bg-gray-900 text-white rounded-full flex items-center justify-center text-3xl font-bold uppercase shrink-0">
+                    {user?.name.charAt(0)}
                 </div>
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-2">Admin Dashboard</h1>
+                    <p className="text-gray-500">Welcome, {user?.name} — Manage events and registrations.</p>
+                </div>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                {[
+                    { label: 'Total Events', value: events.length, icon: <FaCalendarAlt /> },
+                    { label: 'Total Registrations', value: bookings.length, icon: <FaUsers /> },
+                    { label: 'Confirmed', value: bookings.filter(b => b.status === 'confirmed').length, icon: '✓' },
+                    { label: 'Cancelled', value: bookings.filter(b => b.status === 'cancelled').length, icon: '✕' },
+                ].map((stat, i) => (
+                    <div key={i} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 text-center">
+                        <div className="text-3xl font-black text-gray-900 mb-1">{stat.value}</div>
+                        <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">{stat.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-4 mb-6 border-b border-gray-200">
                 <button
-                    onClick={() => setShowEventForm(!showEventForm)}
-                    className="w-full md:w-auto bg-white text-black font-bold py-3 px-6 rounded-lg hover:bg-gray-100 transition shadow-md"
+                    onClick={() => setActiveTab('events')}
+                    className={`pb-3 px-2 font-bold text-sm uppercase tracking-wider transition ${activeTab === 'events' ? 'border-b-2 border-gray-900 text-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
                 >
-                    {showEventForm ? 'Cancel Creation' : '+ Create New Event'}
+                    Events
+                </button>
+                <button
+                    onClick={() => setActiveTab('bookings')}
+                    className={`pb-3 px-2 font-bold text-sm uppercase tracking-wider transition ${activeTab === 'bookings' ? 'border-b-2 border-gray-900 text-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
+                >
+                    All Registrations
                 </button>
             </div>
 
-            {/* Admin Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p className="text-gray-500 text-sm font-bold uppercase tracking-wider mb-1">Total Revenue</p>
-                        <h3 className="text-3xl font-black text-green-600">₹{bookings.reduce((sum, b) => b.paymentStatus === 'paid' && b.status === 'confirmed' ? sum + b.amount : sum, 0)}</h3>
+            {/* EVENTS TAB */}
+            {activeTab === 'events' && (
+                <div>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-gray-800">All Events</h2>
+                        <button
+                            onClick={openCreateForm}
+                            className="flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-black transition shadow"
+                        >
+                            <FaPlus /> Create Event
+                        </button>
                     </div>
-                    <div className="w-12 h-12 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-xl font-bold">₹</div>
-                </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p className="text-gray-500 text-sm font-bold uppercase tracking-wider mb-1">Paid Clients</p>
-                        <h3 className="text-3xl font-black text-blue-600">{new Set(bookings.filter(b => b.paymentStatus === 'paid' && b.status === 'confirmed').map(b => b.userId?._id)).size}</h3>
-                    </div>
-                    <div className="w-12 h-12 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center text-xl font-bold">👤</div>
-                </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-                    <div>
-                        <p className="text-gray-500 text-sm font-bold uppercase tracking-wider mb-1">Pending Requests</p>
-                        <h3 className="text-3xl font-black text-yellow-600">{bookings.filter(b => b.status === 'pending').length}</h3>
-                    </div>
-                    <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl font-bold">⏳</div>
-                </div>
-            </div>
 
-            {showEventForm && (
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8 animation-slideDown">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-800">Create New Event</h2>
-                    <form onSubmit={handleCreateEvent} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <input required type="text" placeholder="Event Title" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
-                        <input required type="text" placeholder="Category (e.g., Tech, Music)" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} />
-                        <input required type="date" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} />
-                        <input required type="text" placeholder="Location" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
-                        <input required type="number" placeholder="Total Seats" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.totalSeats} onChange={e => setFormData({ ...formData, totalSeats: e.target.value })} />
-                        <input required type="number" placeholder="Ticket Price (0 for free)" className="border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.ticketPrice} onChange={e => setFormData({ ...formData, ticketPrice: e.target.value })} />
-
-                        <div className="md:col-span-2">
-                            <input type="text" placeholder="Image URL (Provide any direct link to an image)" className="w-full border px-4 py-3 rounded-lg focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
+                    {/* Event Create/Edit Form */}
+                    {showForm && (
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-md p-6 mb-6">
+                            <h3 className="text-lg font-bold text-gray-900 mb-4">{editingEvent ? 'Edit Event' : 'Create New Event'}</h3>
+                            {formError && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{formError}</div>}
+                            <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Event Title *</label>
+                                    <input name="title" required value={form.title} onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Description *</label>
+                                    <textarea name="description" required rows="3" value={form.description} onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Date *</label>
+                                    <input name="date" type="date" required value={form.date} onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Location *</label>
+                                    <input name="location" required value={form.location} onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Category *</label>
+                                    <select name="category" required value={form.category} onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700">
+                                        {CATEGORIES.map(cat => <option key={cat}>{cat}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Total Seats *</label>
+                                    <input name="totalSeats" type="number" required min="1" value={form.totalSeats} onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Image URL (optional)</label>
+                                    <input name="image" value={form.image} onChange={handleFormChange}
+                                        placeholder="https://..."
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700" />
+                                </div>
+                                <div className="md:col-span-2 flex gap-3 justify-end">
+                                    <button type="button" onClick={() => setShowForm(false)}
+                                        className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" disabled={formLoading}
+                                        className="px-5 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-black transition">
+                                        {formLoading ? 'Saving...' : (editingEvent ? 'Save Changes' : 'Create Event')}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
+                    )}
 
-                        <textarea required placeholder="Event Description" className="border px-4 py-3 rounded-lg md:col-span-2 h-32 focus:ring-2 focus:ring-gray-700 outline-none transition" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
-                        <button type="submit" className="md:col-span-2 bg-gray-900 text-white font-bold py-3 mt-2 rounded-lg hover:bg-black transition shadow-md">Publish Event</button>
-                    </form>
+                    {/* Events List */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {events.map(event => (
+                            <div key={event._id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex gap-4">
+                                {event.image && (
+                                    <img src={event.image} alt={event.title} className="w-20 h-20 object-cover rounded-lg shrink-0" />
+                                )}
+                                <div className="flex-grow min-w-0">
+                                    <h3 className="font-bold text-gray-900 truncate">{event.title}</h3>
+                                    <p className="text-xs text-gray-400 mt-1">{event.category} · {new Date(event.date).toLocaleDateString()}</p>
+                                    <p className="text-xs text-gray-500 mt-1">{event.location}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Seats: {event.availableSeats} / {event.totalSeats}</p>
+                                </div>
+                                <div className="flex flex-col gap-2 shrink-0">
+                                    <button onClick={() => openEditForm(event)}
+                                        className="flex items-center gap-1 text-xs font-semibold text-gray-700 hover:text-gray-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition">
+                                        <FaEdit /> Edit
+                                    </button>
+                                    <button onClick={() => handleDeleteEvent(event._id)}
+                                        className="flex items-center gap-1 text-xs font-semibold text-red-500 hover:text-red-700 border border-red-100 px-3 py-1.5 rounded-lg hover:bg-red-50 transition">
+                                        <FaTrash /> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {events.length === 0 && (
+                        <div className="text-center py-16 text-gray-400">No events yet. Create your first event!</div>
+                    )}
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Events Section */}
-                <div className="flex flex-col">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
-                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-sm">{events.length}</span>
-                        All Events
-                    </h2>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <ul className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-                            {events.length === 0 ? <li className="p-6 text-gray-500 text-center">No events created yet.</li> :
-                                events.map(event => (
-                                    <li key={event._id} className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-gray-50 transition border-b border-gray-100 last:border-0">
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 mb-1 leading-tight">{event.title}</h4>
-                                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                                                <span className="flex items-center gap-1 font-medium"><div className="w-2 h-2 rounded-full bg-blue-500"></div> {new Date(event.date).toLocaleDateString()}</span>
-                                                <span className="flex items-center gap-1 font-medium"><div className={`w-2 h-2 rounded-full ${event.availableSeats > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div> {event.availableSeats}/{event.totalSeats} seats</span>
-                                            </div>
-                                        </div>
-                                        <button onClick={() => handleDeleteEvent(event._id)} className="w-full sm:w-auto text-red-500 hover:text-white hover:bg-red-500 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm shrink-0">
-                                            Delete
-                                        </button>
-                                    </li>
-                                ))
-                            }
-                        </ul>
-                    </div>
+            {/* BOOKINGS TAB */}
+            {activeTab === 'bookings' && (
+                <div>
+                    <h2 className="text-xl font-bold text-gray-800 mb-6">All Registrations ({bookings.length})</h2>
+                    {bookings.length === 0 ? (
+                        <div className="text-center py-16 text-gray-400">No registrations yet.</div>
+                    ) : (
+                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 border-b border-gray-100">
+                                    <tr>
+                                        <th className="text-left px-5 py-3 font-semibold text-gray-600 text-xs uppercase">User</th>
+                                        <th className="text-left px-5 py-3 font-semibold text-gray-600 text-xs uppercase">Event</th>
+                                        <th className="text-left px-5 py-3 font-semibold text-gray-600 text-xs uppercase">Registered On</th>
+                                        <th className="text-left px-5 py-3 font-semibold text-gray-600 text-xs uppercase">Status</th>
+                                        <th className="px-5 py-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {bookings.map(booking => (
+                                        <tr key={booking._id} className="hover:bg-gray-50 transition">
+                                            <td className="px-5 py-4">
+                                                <p className="font-semibold text-gray-900">{booking.userId?.name}</p>
+                                                <p className="text-gray-400 text-xs">{booking.userId?.email}</p>
+                                            </td>
+                                            <td className="px-5 py-4 text-gray-700">{booking.eventId?.title || 'Deleted Event'}</td>
+                                            <td className="px-5 py-4 text-gray-500">{new Date(booking.bookedAt).toLocaleDateString()}</td>
+                                            <td className="px-5 py-4">
+                                                <span className={`px-2 py-1 text-[10px] font-black rounded uppercase tracking-wider ${booking.status === 'confirmed' ? 'bg-green-100 text-green-700' : booking.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                    {booking.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                {booking.status !== 'cancelled' && (
+                                                    <button onClick={() => handleCancelBooking(booking._id)}
+                                                        className="text-xs text-red-500 hover:text-red-700 font-semibold">
+                                                        Cancel
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
-
-                {/* Bookings Section */}
-                <div className="flex flex-col">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
-                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-700 text-sm font-bold">{bookings.length}</span>
-                        Booking Requests
-                    </h2>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <ul className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-                            {bookings.length === 0 ? <li className="p-6 text-gray-500 text-center">No bookings yet.</li> :
-                                bookings.map(booking => (
-                                    <li key={booking._id} className={`p-6 hover:bg-gray-50 transition border-l-4 ${booking.status === 'pending' ? 'border-l-yellow-400' : booking.status === 'confirmed' ? 'border-l-green-400' : 'border-l-red-400'}`}>
-                                        <div className="flex justify-between items-start mb-3">
-                                            <h4 className="font-bold text-gray-900 text-lg leading-tight">{booking.eventId?.title || 'Deleted Event'}</h4>
-                                            <div className="flex flex-col gap-1 items-end shrink-0 ml-4">
-                                                <span className={`px-2 py-1 text-[10px] font-black rounded uppercase tracking-wider ${booking.status === 'confirmed' ? 'bg-green-100 text-green-700' : booking.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{booking.status}</span>
-                                                {booking.status !== 'cancelled' && <span className={`px-2 py-1 text-[10px] font-black rounded uppercase tracking-wider ${booking.paymentStatus === 'paid' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-800'}`}>{booking.paymentStatus.replace('_', ' ')}</span>}
-                                            </div>
-                                        </div>
-                                        <div className="bg-gray-50 rounded-lg p-3 mb-3 border border-gray-100 text-sm">
-                                            <p className="text-gray-700 flex items-center gap-2 mb-1">
-                                                <span className="font-bold w-16 text-gray-500 uppercase text-xs">User:</span>
-                                                <span className="font-semibold">{booking.userId?.name}</span>
-                                                <span className="text-gray-400">({booking.userId?.email})</span>
-                                            </p>
-                                            <p className="text-gray-700 flex items-center gap-2 mb-1">
-                                                <span className="font-bold w-16 text-gray-500 uppercase text-xs">Amount:</span>
-                                                <span className={`font-semibold ${booking.amount === 0 ? 'text-green-600' : ''}`}>{booking.amount === 0 ? 'Free' : `₹${booking.amount}`}</span>
-                                            </p>
-                                            <p className="text-gray-700 flex items-center gap-2 mb-1">
-                                                <span className="font-bold w-16 text-gray-500 uppercase text-xs">Date:</span>
-                                                <span>{new Date(booking.bookedAt).toLocaleString()}</span>
-                                            </p>
-                                            {booking.eventId && (
-                                                <p className="text-gray-700 flex items-center gap-2 mt-2 pt-2 border-t border-gray-200">
-                                                    <span className="font-bold w-16 text-gray-500 uppercase text-xs">Seats:</span>
-                                                    <span className={`font-bold ${booking.eventId.availableSeats > 0 ? 'text-green-600' : 'text-red-500'}`}>{booking.eventId.availableSeats}</span> remaining of {booking.eventId.totalSeats}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* Action buttons for admin */}
-                                        {booking.status === 'pending' && (
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                <button onClick={() => handleConfirmBooking(booking._id, 'paid')} className="flex-1 min-w-[120px] bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 text-xs font-bold py-2.5 px-3 rounded-lg shadow-sm transition">
-                                                    ✓ Approve as Paid
-                                                </button>
-                                                <button onClick={() => handleConfirmBooking(booking._id, 'not_paid')} className="flex-1 min-w-[120px] bg-gray-50 text-gray-700 hover:bg-gray-800 hover:text-white border border-gray-200 text-xs font-bold py-2.5 px-3 rounded-lg shadow-sm transition">
-                                                    ✓ Approve Undecided
-                                                </button>
-                                                <button onClick={() => handleCancelBooking(booking._id)} className="w-[80px] bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border border-red-200 text-xs font-bold py-2.5 px-3 rounded-lg transition">
-                                                    ✕ Reject
-                                                </button>
-                                            </div>
-                                        )}
-                                    </li>
-                                ))
-                            }
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            )}
         </div>
     );
 };
